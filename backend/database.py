@@ -27,27 +27,19 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
-        CREATE TABLE IF NOT EXISTS reminders (
+        CREATE TABLE IF NOT EXISTS farmaci (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            message TEXT NOT NULL CHECK(length(message) <= 500),
-            next_execution TIMESTAMP NOT NULL,
-            recurrence_json TEXT,
-            status TEXT NOT NULL DEFAULT 'pending'
-                CHECK(status IN ('pending','sent','completed','paused','deleted','resolved')),
+            nome TEXT NOT NULL CHECK(length(nome) <= 100),
+            descrizione TEXT CHECK(length(descrizione) <= 500),
+            data_scadenza DATE NOT NULL,
+            stato TEXT NOT NULL DEFAULT 'attivo'
+                CHECK(stato IN ('attivo','in_scadenza','scaduto','eliminato')),
+            notifica_preavviso_inviata BOOLEAN NOT NULL DEFAULT 0,
+            notifica_scaduto_inviata BOOLEAN NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             deleted_at TIMESTAMP,
-            last_sent_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS executions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            reminder_id INTEGER NOT NULL,
-            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            confirmed BOOLEAN DEFAULT 0,
-            confirmed_at TIMESTAMP,
-            FOREIGN KEY (reminder_id) REFERENCES reminders(id)
         );
 
         CREATE TABLE IF NOT EXISTS logs (
@@ -65,40 +57,6 @@ def init_db():
     """)
 
     conn.commit()
-    conn.close()
-
-    # Migrazione automatica: assicura che 'resolved' sia nel CHECK constraint
-    _migrate_status_constraint()
-
-
-def _migrate_status_constraint():
-    """Ricrea la tabella reminders se il constraint status non include 'resolved'."""
-    conn = get_connection()
-    row = conn.execute(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='reminders'"
-    ).fetchone()
-    if row and "resolved" not in row["sql"]:
-        conn.executescript("""
-            PRAGMA foreign_keys = OFF;
-            ALTER TABLE reminders RENAME TO reminders_old;
-            CREATE TABLE reminders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                message TEXT NOT NULL CHECK(length(message) <= 500),
-                next_execution TIMESTAMP NOT NULL,
-                recurrence_json TEXT,
-                status TEXT NOT NULL DEFAULT 'pending'
-                    CHECK(status IN ('pending','sent','completed','paused','deleted','resolved')),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                deleted_at TIMESTAMP,
-                last_sent_at TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id)
-            );
-            INSERT INTO reminders SELECT * FROM reminders_old;
-            DROP TABLE reminders_old;
-            PRAGMA foreign_keys = ON;
-        """)
-        conn.commit()
     conn.close()
 
 
@@ -128,12 +86,10 @@ def get_telegram_config() -> dict:
     """
     Restituisce la config Telegram attiva.
     Priorità per ogni campo: DB (impostato dalla UI) → config.yaml → valore vuoto.
-    Token e chat_ids vengono letti indipendentemente l'uno dall'altro.
     """
     import json, yaml
     from pathlib import Path
 
-    # Leggi config.yaml come fallback
     yaml_token = ""
     yaml_chat_ids = []
     config_path = Path(__file__).resolve().parent.parent / "config.yaml"
@@ -146,10 +102,8 @@ def get_telegram_config() -> dict:
         except Exception:
             pass
 
-    # Token: DB ha priorità su config.yaml
     token = get_setting("telegram_token") or yaml_token
 
-    # Chat IDs: DB ha priorità su config.yaml
     chat_ids_raw = get_setting("telegram_chat_ids")
     if chat_ids_raw:
         try:
@@ -160,5 +114,4 @@ def get_telegram_config() -> dict:
         chat_ids = yaml_chat_ids
 
     return {"telegram_token": token, "chat_ids": chat_ids}
-
 

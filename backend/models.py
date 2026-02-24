@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime
 import html
 
 
@@ -11,48 +11,63 @@ class LoginRequest(BaseModel):
     password: str
 
 
-# ---------- Reminder ----------
+# ---------- Farmaco ----------
 
-class ReminderCreate(BaseModel):
-    message: str = Field(..., max_length=500)
-    next_execution: datetime
-    recurrence_json: Optional[str] = None
+class FarmacoCreate(BaseModel):
+    nome: str = Field(..., max_length=100)
+    descrizione: Optional[str] = Field(None, max_length=500)
+    data_scadenza: date
 
-    @field_validator("message")
+    @field_validator("nome")
     @classmethod
-    def sanitize_message(cls, v: str) -> str:
+    def sanitize_nome(cls, v: str) -> str:
         return html.escape(v.strip())
 
-
-class ReminderUpdate(BaseModel):
-    message: Optional[str] = Field(None, max_length=500)
-    next_execution: Optional[datetime] = None
-    recurrence_json: Optional[str] = None
-    status: Optional[str] = None
-
-    @field_validator("message")
+    @field_validator("descrizione")
     @classmethod
-    def sanitize_message(cls, v: Optional[str]) -> Optional[str]:
+    def sanitize_descrizione(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return html.escape(v.strip()) or None
+        return v
+
+
+class FarmacoUpdate(BaseModel):
+    nome: Optional[str] = Field(None, max_length=100)
+    descrizione: Optional[str] = Field(None, max_length=500)
+    data_scadenza: Optional[date] = None
+    stato: Optional[str] = None
+
+    @field_validator("nome")
+    @classmethod
+    def sanitize_nome(cls, v: Optional[str]) -> Optional[str]:
         if v is not None:
             return html.escape(v.strip())
         return v
 
-    @field_validator("status")
+    @field_validator("descrizione")
     @classmethod
-    def validate_status(cls, v: Optional[str]) -> Optional[str]:
-        allowed = {"pending", "sent", "completed", "paused", "deleted", "resolved"}
+    def sanitize_descrizione(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            return html.escape(v.strip()) or None
+        return v
+
+    @field_validator("stato")
+    @classmethod
+    def validate_stato(cls, v: Optional[str]) -> Optional[str]:
+        allowed = {"attivo", "in_scadenza", "scaduto", "eliminato"}
         if v is not None and v not in allowed:
-            raise ValueError(f"Status deve essere uno di: {allowed}")
+            raise ValueError(f"Stato deve essere uno di: {allowed}")
         return v
 
 
-class ReminderOut(BaseModel):
+class FarmacoOut(BaseModel):
     id: int
     user_id: int
-    message: str
-    next_execution: datetime
-    recurrence_json: Optional[str]
-    status: str
+    nome: str
+    descrizione: Optional[str]
+    data_scadenza: date
+    stato: str
+    notifica_preavviso_inviata: bool
+    notifica_scaduto_inviata: bool
     created_at: datetime
-    last_sent_at: Optional[datetime]
-
+    deleted_at: Optional[datetime]

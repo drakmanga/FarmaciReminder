@@ -1,21 +1,20 @@
 import sys
 import asyncio
 from pathlib import Path
+from datetime import date
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 import yaml
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
 )
-from scheduler.log_manager import get_logger, db_log
+from scheduler.log_manager import get_logger
 from backend.database import get_connection, get_telegram_config
-from backend.routers.confirm import _apply_confirmation
 
 logger = get_logger("bot.telegram")
 
@@ -42,52 +41,55 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⛔ Non autorizzato.")
         return
     await update.message.reply_text(
-        "👋 Ciao! Sono il tuo bot Reminder.\n"
-        "Riceverai notifiche con il pulsante ✔ per confermare."
+        "👋 Ciao! Sono il tuo <b>FarmaciReminder</b> 💊\n\n"
+        "Riceverai notifiche automatiche quando un farmaco:\n"
+        "  ⚠️ <b>è in scadenza</b> (entro 30 giorni)\n"
+        "  🚨 <b>è scaduto</b>\n\n"
+        "Comandi disponibili:\n"
+        "/farmaci — Lista farmaci in scadenza o scaduti\n"
+        "/start — Mostra questo messaggio",
+        parse_mode="HTML"
     )
 
 
-async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
+async def farmaci_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _is_authorized(update):
-        await query.edit_message_text("⛔ Non autorizzato.")
-        return
-
-    data = query.data
-    if not data.startswith("confirm:"):
-        return
-
-    try:
-        execution_id = int(data.split(":")[1])
-    except (IndexError, ValueError):
-        await query.edit_message_text("❌ Dati non validi.")
+        await update.message.reply_text("⛔ Non autorizzato.")
         return
 
     conn = get_connection()
-    execution = conn.execute(
-        "SELECT * FROM executions WHERE id = ?", (execution_id,)
-    ).fetchone()
-
-    if not execution:
-        conn.close()
-        await query.edit_message_text("❌ Reminder non trovato.")
-        return
-
-    if execution["confirmed"]:
-        conn.close()
-        await query.edit_message_text("✅ Già confermato in precedenza.")
-        return
-
-    # Usa la logica centralizzata di conferma (gestisce ricorrenza, resolved, ecc.)
-    _apply_confirmation(conn, execution["reminder_id"], execution_id)
+    today = date.today().isoformat()
+    rows = conn.execute(
+        """SELECT nome, descrizione, data_scadenza, stato
+           FROM farmaci
+           WHERE stato IN ('in_scadenza', 'scaduto')
+           AND deleted_at IS NULL
+           ORDER BY data_scadenza ASC"""
+    ).fetchall()
     conn.close()
 
-    logger.info(f"Execution {execution_id} confermata via bot")
-    db_log("INFO", f"Execution {execution_id} confermata via bot")
+    if not rows:
+        await update.message.reply_text(
+            "✅ <b>Nessun farmaco in scadenza o scaduto.</b>\n\n"
+            "Tutti i tuoi farmaci sono nella norma! 🎉",
+            parse_mode="HTML"
+        )
+        return
 
-    await query.edit_message_text("✅ Reminder confermato! Grazie.")
+    lines = ["💊 <b>Farmaci da controllare:</b>\n"]
+    for r in rows:
+        stato_emoji = "🚨" if r["stato"] == "scaduto" else "⚠️"
+        ds = date.fromisoformat(r["data_scadenza"])
+        giorni = (ds - date.today()).days
+        data_fmt = ds.strftime("%d/%m/%Y")
+        if giorni < 0:
+            scad_str = f"<b>Scaduto da {abs(giorni)} giorni</b> ({data_fmt})"
+        else:
+            scad_str = f"Scade il {data_fmt} (tra {giorni} giorni)"
+        desc = f" — <i>{r['descrizione']}</i>" if r.get("descrizione") else ""
+        lines.append(f"{stato_emoji} <b>{r['nome']}</b>{desc}\n   📅 {scad_str}")
+
+    await update.message.reply_text("\n\n".join(lines), parse_mode="HTML")
 
 
 def start_bot():
@@ -102,12 +104,12 @@ def start_bot():
     async def _run():
         app = ApplicationBuilder().token(token).build()
         app.add_handler(CommandHandler("start", start_command))
-        app.add_handler(CallbackQueryHandler(callback_handler))
+        app.add_handler(CommandHandler("farmaci", farmaci_command))
 
         await app.initialize()
         await app.start()
         await app.updater.start_polling(poll_interval=POLLING_INTERVAL)
-        logger.info("Bot Telegram avviato in polling")
+        logger.info("Bot Telegram FarmaciReminder avviato in polling")
 
         # Tieni vivo il thread finché l'applicazione gira
         while app.running:

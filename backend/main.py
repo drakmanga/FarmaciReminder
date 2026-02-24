@@ -15,8 +15,7 @@ sys.path.insert(0, str(BASE_DIR))
 
 from backend.database import init_db
 from backend.auth import router as auth_router, create_default_users
-from backend.routers.reminders import router as reminders_router
-from backend.routers.confirm import router as confirm_router
+from backend.routers.farmaci import router as farmaci_router
 from backend.routers.settings import router as settings_router
 
 # Carica config
@@ -25,7 +24,7 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 with open(CONFIG_PATH, "r") as f:
     CONFIG = yaml.safe_load(f)
 
-app = FastAPI(title="Reminder System", version="1.0.0")
+app = FastAPI(title="FarmaciReminder", version="1.0.0")
 
 # Session middleware
 SECRET_KEY = os.getenv("SECRET_KEY", "cambia-questa-chiave-segreta-in-produzione")
@@ -37,8 +36,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "frontend"))
 
 # Router
 app.include_router(auth_router)
-app.include_router(reminders_router)
-app.include_router(confirm_router)
+app.include_router(farmaci_router)
 app.include_router(settings_router)
 
 
@@ -81,4 +79,3 @@ if __name__ == "__main__":
         log_level="warning",   # evita il flood di GET /reminders ogni 30s
         access_log=False,      # disabilita access log (usa il logger applicativo)
     )
-

@@ -1,0 +1,86 @@
+{% if farmaci %}
+<table class="farmaci-table">
+    <thead>
+        <tr>
+            <th class="th-sort" onclick="setSort('id')" title="Ordina per ID">
+                # {% if sort == 'id' %}↑{% else %}<span class="th-arrow">↕</span>{% endif %}
+            </th>
+            <th class="th-sort" onclick="setSort(_currentSort === 'nome' ? 'nome_desc' : 'nome')" title="Ordina per nome">
+                Nome {% if sort == 'nome' %}↑{% elif sort == 'nome_desc' %}↓{% else %}<span class="th-arrow">↕</span>{% endif %}
+            </th>
+            <th>Indicazione</th>
+            <th class="th-sort" onclick="setSort(_currentSort === 'scadenza' ? 'scadenza_desc' : 'scadenza')" title="Ordina per scadenza">
+                Scadenza {% if sort == 'scadenza' %}↑{% elif sort == 'scadenza_desc' %}↓{% else %}<span class="th-arrow">↕</span>{% endif %}
+            </th>
+            <th>Stato</th>
+            <th>Azioni</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for f in farmaci %}
+        {% set giorni = giorni_alla_scadenza(f.data_scadenza) %}
+        <tr class="row-{{ f.stato }}">
+            <td>{{ f.id }}</td>
+            <td class="farmaco-nome">
+                <span class="farmaco-nome-text">{{ f.nome }}</span>
+            </td>
+            <td class="farmaco-desc">
+                {% if f.descrizione %}
+                    <span class="desc-text">{{ f.descrizione }}</span>
+                {% else %}
+                    <span style="color:var(--text-muted)">—</span>
+                {% endif %}
+            </td>
+            <td class="farmaco-scadenza">
+                {% if f.stato == 'eliminato' %}
+                    <span style="color:var(--text-muted)">{{ f.data_scadenza }}</span>
+                {% elif giorni < 0 %}
+                    <span class="scad-text scad-expired">📅 {{ f.data_scadenza }}</span>
+                    <small class="scad-detail">da {{ -giorni }} giorni</small>
+                {% elif giorni <= 30 %}
+                    <span class="scad-text scad-warning">📅 {{ f.data_scadenza }}</span>
+                    <small class="scad-detail">tra {{ giorni }} giorni</small>
+                {% else %}
+                    <span class="scad-text">📅 {{ f.data_scadenza }}</span>
+                    <small class="scad-detail">tra {{ giorni }} giorni</small>
+                {% endif %}
+            </td>
+            <td>
+                {% if f.stato == 'attivo' %}
+                    <span class="badge badge-attivo">✅ Attivo</span>
+                {% elif f.stato == 'in_scadenza' %}
+                    <span class="badge badge-in-scadenza">⚠️ In scadenza</span>
+                {% elif f.stato == 'scaduto' %}
+                    <span class="badge badge-scaduto">🚨 Scaduto</span>
+                {% elif f.stato == 'eliminato' %}
+                    <span class="badge badge-eliminato">🗑️ Eliminato</span>
+                {% else %}
+                    <span class="badge">{{ f.stato }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <div class="actions">
+                    {% if f.stato == 'eliminato' %}
+                        <button class="btn-icon action-restore" title="Ripristina" data-id="{{ f.id }}">♻️</button>
+                    {% else %}
+                        <button class="btn-icon action-edit" title="Modifica"
+                            data-id="{{ f.id }}"
+                            data-nome="{{ f.nome | e }}"
+                            data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
+                            data-scadenza="{{ f.data_scadenza }}">✏️</button>
+                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<div class="empty-state">
+    <span class="emoji">💊</span>
+    <p>Nessun farmaco registrato. Aggiungine uno!</p>
+</div>
+{% endif %}
+
