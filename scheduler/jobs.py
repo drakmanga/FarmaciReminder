@@ -64,6 +64,7 @@ def check_scadenze_farmaci():
                JOIN users u ON f.user_id = u.id
                WHERE f.stato IN ('attivo', 'in_scadenza')
                AND f.deleted_at IS NULL
+               AND f.data_scadenza IS NOT NULL
                AND f.data_scadenza > ?
                AND f.data_scadenza <= ?
                AND f.notifica_preavviso_inviata = 0""",
@@ -102,6 +103,7 @@ def check_scadenze_farmaci():
                JOIN users u ON f.user_id = u.id
                WHERE f.stato IN ('attivo', 'in_scadenza')
                AND f.deleted_at IS NULL
+               AND f.data_scadenza IS NOT NULL
                AND f.data_scadenza <= ?
                AND f.notifica_scaduto_inviata = 0""",
             (today_str,),

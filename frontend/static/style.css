@@ -295,6 +295,7 @@ body {
 .badge-in-scadenza { background: rgba(255,167,38,0.15); color: var(--in-scadenza); border: 1px solid rgba(255,167,38,0.35); }
 .badge-scaduto   { background: rgba(239,83,80,0.15);   color: var(--scaduto);   border: 1px solid rgba(239,83,80,0.35); }
 .badge-eliminato { background: rgba(96,125,139,0.12);  color: var(--eliminato); border: 1px solid rgba(96,125,139,0.3); }
+.badge-no-scadenza { background: rgba(41,182,246,0.12); color: var(--info); border: 1px solid rgba(41,182,246,0.3); }
 
 /* Legend */
 .legend { display: flex; gap: 0.5rem; flex-wrap: wrap; }

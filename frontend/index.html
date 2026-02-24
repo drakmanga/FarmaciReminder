@@ -93,6 +93,7 @@
                     <span class="badge badge-attivo">✅ Attivo</span>
                     <span class="badge badge-in-scadenza">⚠️ In scadenza</span>
                     <span class="badge badge-scaduto">🚨 Scaduto</span>
+                    <span class="badge badge-no-scadenza">∞ Nessuna scadenza</span>
                 </div>
                 <button class="filter-btn filter-deleted" id="toggle-deleted" onclick="toggleDeleted()">🗑️ Mostra eliminati</button>
             </div>
@@ -247,7 +248,13 @@ function handleLoginResponse(event) {
 
 // ---- FORM CLEAR ----
 function clearForm(event) {
-    if (event.detail.successful) { event.target.reset(); }
+    if (event.detail.successful) {
+        event.target.reset();
+        const scadInput = document.getElementById('create-scadenza');
+        const noScadCheck = document.getElementById('create-no-scadenza');
+        if (scadInput) scadInput.disabled = false;
+        if (noScadCheck) noScadCheck.checked = false;
+    }
 }
 
 // ---- EDIT MODAL ----

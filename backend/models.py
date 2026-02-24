@@ -16,7 +16,7 @@ class LoginRequest(BaseModel):
 class FarmacoCreate(BaseModel):
     nome: str = Field(..., max_length=100)
     descrizione: Optional[str] = Field(None, max_length=500)
-    data_scadenza: date
+    data_scadenza: Optional[date] = None
 
     @field_validator("nome")
     @classmethod
@@ -65,9 +65,8 @@ class FarmacoOut(BaseModel):
     user_id: int
     nome: str
     descrizione: Optional[str]
-    data_scadenza: date
+    data_scadenza: Optional[date]
     stato: str
-    notifica_preavviso_inviata: bool
     notifica_scaduto_inviata: bool
     created_at: datetime
     deleted_at: Optional[datetime]

@@ -32,7 +32,9 @@
                 {% endif %}
             </td>
             <td class="farmaco-scadenza">
-                {% if f.stato == 'eliminato' %}
+                {% if f.data_scadenza is none %}
+                    <span class="badge badge-no-scadenza">∞ Nessuna scadenza</span>
+                {% elif f.stato == 'eliminato' %}
                     <span style="color:var(--text-muted)">{{ f.data_scadenza }}</span>
                 {% elif giorni < 0 %}
                     <span class="scad-text scad-expired">📅 {{ f.data_scadenza }}</span>
@@ -70,14 +72,14 @@
                             data-id="{{ f.id }}"
                             data-nome="{{ f.nome | e }}"
                             data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
-                            data-scadenza="{{ f.data_scadenza }}">✏️</button>
+                            data-scadenza="{{ f.data_scadenza or '' }}">✏️</button>
                         <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
                     {% else %}
                         <button class="btn-icon action-edit" title="Modifica"
                             data-id="{{ f.id }}"
                             data-nome="{{ f.nome | e }}"
                             data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
-                            data-scadenza="{{ f.data_scadenza }}">✏️</button>
+                            data-scadenza="{{ f.data_scadenza or '' }}">✏️</button>
                         <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
                     {% endif %}
                 </div>

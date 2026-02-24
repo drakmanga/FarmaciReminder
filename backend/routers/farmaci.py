@@ -13,8 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "frontend"))
 
 
-def _giorni_alla_scadenza(data_scadenza_str: str) -> int:
-    """Calcola i giorni rimanenti alla scadenza."""
+def _giorni_alla_scadenza(data_scadenza_str) -> int | None:
+    """Calcola i giorni rimanenti alla scadenza. Ritorna None se non c'è scadenza."""
+    if data_scadenza_str is None:
+        return None
     try:
         if isinstance(data_scadenza_str, str):
             ds = date.fromisoformat(data_scadenza_str)
@@ -60,7 +62,7 @@ def _get_farmaci_html(
     elif sort == "nome_desc":
         order = "ORDER BY nome DESC"
     elif sort == "scadenza_desc":
-        order = "ORDER BY data_scadenza DESC"
+        order = "ORDER BY data_scadenza IS NULL, data_scadenza DESC"
     elif sort == "id":
         order = "ORDER BY id ASC"
     else:  # default: scadenza ASC (prima le più urgenti)
@@ -71,7 +73,7 @@ def _get_farmaci_html(
                    WHEN 'attivo' THEN 3
                    WHEN 'eliminato' THEN 4
                    ELSE 5
-               END, data_scadenza ASC"""
+               END, data_scadenza IS NULL, data_scadenza ASC"""
 
     rows = conn.execute(
         f"SELECT * FROM farmaci {where} {order}", params
@@ -108,25 +110,31 @@ async def create_farmaco(
     form = await request.form()
     nome = str(form.get("nome", "")).strip()
     descrizione = str(form.get("descrizione", "")).strip() or None
-    data_scadenza_str = str(form.get("data_scadenza", ""))
+    data_scadenza_str = str(form.get("data_scadenza", "")).strip()
+    no_scadenza = form.get("no_scadenza") == "on"
 
-    if not nome or not data_scadenza_str:
-        raise HTTPException(status_code=400, detail="Campi obbligatori mancanti")
+    if not nome:
+        raise HTTPException(status_code=400, detail="Il nome è obbligatorio")
 
     nome = _html.escape(nome[:100])
     if descrizione:
         descrizione = _html.escape(descrizione[:500])
 
-    try:
-        data_scadenza = date.fromisoformat(data_scadenza_str)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Data di scadenza non valida")
+    data_scadenza_val = None
+    if not no_scadenza:
+        if not data_scadenza_str:
+            raise HTTPException(status_code=400, detail="Inserisci una data di scadenza oppure seleziona 'Nessuna scadenza'")
+        try:
+            date.fromisoformat(data_scadenza_str)
+            data_scadenza_val = data_scadenza_str
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Data di scadenza non valida")
 
     conn = get_connection()
     conn.execute(
         """INSERT INTO farmaci (user_id, nome, descrizione, data_scadenza, stato)
            VALUES (?, ?, ?, ?, 'attivo')""",
-        (current_user["id"], nome, descrizione, data_scadenza_str),
+        (current_user["id"], nome, descrizione, data_scadenza_val),
     )
     conn.commit()
     conn.close()
@@ -156,12 +164,14 @@ async def update_farmaco(
         descrizione = body.get("descrizione")
         data_scadenza_str = body.get("data_scadenza")
         stato = body.get("stato")
+        no_scadenza = body.get("no_scadenza", False)
     else:
         form = await request.form()
         nome = form.get("nome")
         descrizione = form.get("descrizione")
         data_scadenza_str = form.get("data_scadenza")
         stato = form.get("stato")
+        no_scadenza = form.get("no_scadenza") == "on"
 
     fields = []
     values = []
@@ -175,7 +185,13 @@ async def update_farmaco(
         fields.append("descrizione = ?")
         values.append(desc_val)
 
-    if data_scadenza_str:
+    if no_scadenza:
+        # Rimuovi la scadenza
+        fields.append("data_scadenza = NULL")
+        fields.append("notifica_preavviso_inviata = 0")
+        fields.append("notifica_scaduto_inviata = 0")
+        fields.append("stato = 'attivo'")
+    elif data_scadenza_str:
         try:
             date.fromisoformat(str(data_scadenza_str))
             fields.append("data_scadenza = ?")

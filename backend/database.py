@@ -32,7 +32,7 @@ def init_db():
             user_id INTEGER NOT NULL,
             nome TEXT NOT NULL CHECK(length(nome) <= 100),
             descrizione TEXT CHECK(length(descrizione) <= 500),
-            data_scadenza DATE NOT NULL,
+            data_scadenza DATE,
             stato TEXT NOT NULL DEFAULT 'attivo'
                 CHECK(stato IN ('attivo','in_scadenza','scaduto','eliminato')),
             notifica_preavviso_inviata BOOLEAN NOT NULL DEFAULT 0,
