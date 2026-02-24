@@ -1,11 +1,11 @@
 version: "3.9"
 
 services:
-  reminder_app:
+  farmaci_app:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: reminder_system
+    container_name: farmaci_reminder
     restart: unless-stopped
 
     ports:

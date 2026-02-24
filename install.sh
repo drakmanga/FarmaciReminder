@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
-#  Reminder System — Script di installazione interattivo
+#  FarmaciReminder — Script di installazione interattivo
 #  Da eseguire sul CT Debian come root
-#  Uso: bash <(curl -fsSL https://raw.githubusercontent.com/.../install.sh)
-#   oppure copiare il file sul CT e: bash install.sh
+#  Uso: bash install.sh
 # ============================================================
 set -euo pipefail
 
@@ -21,20 +20,17 @@ ask()     { echo -e "${BOLD}$1${RESET}"; }
 clear
 echo -e "${CYAN}${BOLD}"
 cat << 'EOF'
-  ____                _           _
- |  _ \ ___ _ __ ___ (_)_ __   __| | ___ _ __
- | |_) / _ \ '_ ` _ \| | '_ \ / _` |/ _ \ '__|
- |  _ <  __/ | | | | | | | | | (_| |  __/ |
- |_| \_\___|_| |_| |_|_|_| |_|\__,_|\___|_|
-  ____            _
- / ___| _   _ ___| |_ ___ _ __ ___
- \___ \| | | / __| __/ _ \ '_ ` _ \
-  ___) | |_| \__ \ ||  __/ | | | | |
- |____/ \__, |___/\__\___|_| |_| |_|
-        |___/
+  ___                          _
+ | __|_ _ _ _ _ __  __ _ __(_)
+ | _/ _` | '_| '  \/ _` / _| |
+ |_|\__,_|_| |_|_|_\__,_\__|_|
+  ___              _         _
+ | _ \___ _ __ (_)_ _  __| |___ _ _
+ |   / -_) '  \| | ' \/ _` / -_) '_|
+ |_|_\___|_|_|_|_|_||_\__,_\___|_|
 EOF
 echo -e "${RESET}"
-echo -e "  ${BOLD}Installazione interattiva per Debian LXC / CT${RESET}"
+echo -e "  ${BOLD}💊 Installazione interattiva per Debian LXC / CT${RESET}"
 echo -e "  ──────────────────────────────────────────────"
 
 # ── Controllo root ───────────────────────────────────────────
@@ -43,9 +39,9 @@ echo -e "  ───────────────────────
 # ── Raccolta parametri ───────────────────────────────────────
 header "Configurazione"
 
-ask "\n📁 Directory di installazione [/opt/reminder]:"
+ask "\n📁 Directory di installazione [/opt/farmaci_reminder]:"
 read -r INSTALL_DIR
-INSTALL_DIR="${INSTALL_DIR:-/opt/reminder}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/farmaci_reminder}"
 
 ask "🔌 Porta HTTP [8000]:"
 read -r APP_PORT
@@ -133,13 +129,20 @@ success "Dipendenze Python installate"
 # ── config.yaml ─────────────────────────────────────────────
 header "Scrittura config.yaml"
 cat > "${INSTALL_DIR}/config.yaml" << EOF
+# config.yaml — Configurazione Centrale FarmaciReminder
 app_env: prod
-timezone: ${TIMEZONE}
+timezone_default: ${TIMEZONE}
 admin_username: ${ADMIN_USER}
 admin_password: ${ADMIN_PASS}
 telegram_token: "${TG_TOKEN}"
 chat_ids: [${TG_CHAT_ID}]
 polling_interval_sec: 2
+log_max_size_mb: 10
+log_cleanup_mb: 5
+db_path: "data/farmaci.db"
+backup_path: "data/backups"
+log_path: "logs/app.log"
+backup_keep: 7
 EOF
 chmod 600 "${INSTALL_DIR}/config.yaml"
 success "config.yaml creato"
@@ -147,16 +150,16 @@ success "config.yaml creato"
 # ── .env ─────────────────────────────────────────────────────
 cat > "${INSTALL_DIR}/.env" << EOF
 SECRET_KEY=${SECRET_KEY}
-DB_PATH=${INSTALL_DIR}/data/reminder.db
+DB_PATH=${INSTALL_DIR}/data/farmaci.db
 APP_PORT=${APP_PORT}
 EOF
 chmod 600 "${INSTALL_DIR}/.env"
 
 # ── Systemd service ──────────────────────────────────────────
 header "Installazione servizio systemd"
-cat > /etc/systemd/system/reminder.service << EOF
+cat > /etc/systemd/system/farmaci_reminder.service << EOF
 [Unit]
-Description=Reminder System
+Description=FarmaciReminder
 After=network.target
 Wants=network-online.target
 
@@ -179,12 +182,12 @@ WantedBy=multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable reminder.service
-systemctl start reminder.service
+systemctl enable farmaci_reminder.service
+systemctl start farmaci_reminder.service
 success "Servizio systemd installato e avviato"
 
 # ── Logrotate ────────────────────────────────────────────────
-cat > /etc/logrotate.d/reminder << EOF
+cat > /etc/logrotate.d/farmaci_reminder << EOF
 ${INSTALL_DIR}/logs/*.log {
     daily
     rotate 7
@@ -201,21 +204,21 @@ sleep 3
 if curl -sf "http://localhost:${APP_PORT}/health" > /dev/null 2>&1; then
     success "Servizio avviato correttamente"
 else
-    warn "Il servizio potrebbe ancora essere in avvio. Controlla con: journalctl -u reminder -f"
+    warn "Il servizio potrebbe ancora essere in avvio. Controlla con: journalctl -u farmaci_reminder -f"
 fi
 
 # ── Riepilogo finale ─────────────────────────────────────────
 IP=$(hostname -I | awk '{print $1}')
 echo ""
 echo -e "${GREEN}${BOLD}"
-echo -e "  ✅ Installazione completata!"
+echo -e "  ✅ Installazione completata! — FarmaciReminder 💊"
 echo -e "${RESET}"
 echo -e "  🌐 Interfaccia web:  ${CYAN}http://${IP}:${APP_PORT}${RESET}"
 echo -e "  👤 Username:         ${CYAN}${ADMIN_USER}${RESET}"
 echo -e "  📁 Directory:        ${CYAN}${INSTALL_DIR}${RESET}"
-echo -e "  📋 Log:              ${CYAN}journalctl -u reminder -f${RESET}"
-echo -e "  🔄 Riavvia:          ${CYAN}systemctl restart reminder${RESET}"
-echo -e "  🛑 Ferma:            ${CYAN}systemctl stop reminder${RESET}"
+echo -e "  📋 Log:              ${CYAN}journalctl -u farmaci_reminder -f${RESET}"
+echo -e "  🔄 Riavvia:          ${CYAN}systemctl restart farmaci_reminder${RESET}"
+echo -e "  🛑 Ferma:            ${CYAN}systemctl stop farmaci_reminder${RESET}"
 if [[ -z "$TG_TOKEN" ]]; then
     echo ""
     warn "Ricordati di configurare il token Telegram dalla UI → ⚙️ Impostazioni"

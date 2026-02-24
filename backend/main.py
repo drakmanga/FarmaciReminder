@@ -76,6 +76,6 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=(env == "dev"),
-        log_level="warning",   # evita il flood di GET /reminders ogni 30s
+        log_level="warning",   # riduce il rumore nei log
         access_log=False,      # disabilita access log (usa il logger applicativo)
     )

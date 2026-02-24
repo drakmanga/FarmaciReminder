@@ -86,7 +86,7 @@ async def test_telegram(current_user: dict = Depends(get_current_user)):
         try:
             resp = req_lib.post(
                 f"https://api.telegram.org/bot{token}/sendMessage",
-                json={"chat_id": chat_id, "text": "✅ Test connessione Reminder System — funziona!"},
+                json={"chat_id": chat_id, "text": "✅ Test connessione FarmaciReminder 💊 — funziona!"},
                 timeout=5,
             )
             results.append({"chat_id": chat_id, "ok": resp.status_code == 200})

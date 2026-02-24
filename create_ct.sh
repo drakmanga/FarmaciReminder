@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-#  Reminder System — Creazione CT su Proxmox
+#  FarmaciReminder — Creazione CT su Proxmox
 #  Da eseguire sulla shell di Proxmox (nodo host)
 #
 #  Uso:
@@ -30,13 +30,16 @@ ask()     { echo -e "${BOLD}$1${RESET}"; }
 clear
 echo -e "${CYAN}${BOLD}"
 cat << 'EOF'
-  ____                _           _
- |  _ \ ___ _ __ ___ (_)_ __   __| | ___ _ __
- | |_) / _ \ '_ ` _ \| | '_ \ / _` |/ _ \ '__|
- |  _ <  __/ | | | | | | | | | (_| |  __/ |
- |_| \_\___|_| |_| |_|_|_| |_|\__,_|\___|_|
+  ___                          _
+ | __|_ _ _ _ _ __  __ _ __(_)
+ | _/ _` | '_| '  \/ _` / _| |
+ |_|\__,_|_| |_|_|_\__,_\__|_|
+  ___              _         _
+ | _ \___ _ __ (_)_ _  __| |___ _ _
+ |   / -_) '  \| | ' \/ _` / -_) '_|
+ |_|_\___|_|_|_|_|_||_\__,_\___|_|
 
-  Creazione CT su Proxmox
+  💊 Creazione CT su Proxmox
 EOF
 echo -e "${RESET}"
 
@@ -48,9 +51,9 @@ read -r CT_ID
 [[ -z "$CT_ID" ]] && error "ID CT obbligatorio"
 pct status "$CT_ID" &>/dev/null && error "CT $CT_ID esiste già"
 
-ask "📛 Hostname [reminder]:"
+ask "📛 Hostname [farmaci]:"
 read -r CT_HOSTNAME
-CT_HOSTNAME="${CT_HOSTNAME:-reminder}"
+CT_HOSTNAME="${CT_HOSTNAME:-farmaci}"
 
 ask "🔒 Password root del CT:"
 read -rs CT_PASSWORD
@@ -169,7 +172,7 @@ header "Copia progetto nel CT"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Crea un archivio temporaneo escludendo .venv e __pycache__
-TMP_ARCHIVE="/tmp/reminder_project_$$.tar.gz"
+TMP_ARCHIVE="/tmp/farmaci_reminder_$$.tar.gz"
 tar -czf "$TMP_ARCHIVE" \
     --exclude=".venv" \
     --exclude="__pycache__" \
@@ -180,11 +183,11 @@ tar -czf "$TMP_ARCHIVE" \
     -C "$(dirname "$SCRIPT_DIR")" \
     "$(basename "$SCRIPT_DIR")"
 
-pct push "$CT_ID" "$TMP_ARCHIVE" /tmp/reminder_project.tar.gz
+pct push "$CT_ID" "$TMP_ARCHIVE" /tmp/farmaci_reminder.tar.gz
 rm -f "$TMP_ARCHIVE"
 
-pct exec "$CT_ID" -- bash -c "mkdir -p /opt && tar -xzf /tmp/reminder_project.tar.gz -C /opt/ && mv /opt/$(basename "$SCRIPT_DIR") /opt/reminder 2>/dev/null || true && rm /tmp/reminder_project.tar.gz"
-success "Progetto copiato in /opt/reminder"
+pct exec "$CT_ID" -- bash -c "mkdir -p /opt && tar -xzf /tmp/farmaci_reminder.tar.gz -C /opt/ && mv /opt/$(basename "$SCRIPT_DIR") /opt/farmaci_reminder 2>/dev/null || true && rm /tmp/farmaci_reminder.tar.gz"
+success "Progetto copiato in /opt/farmaci_reminder"
 
 # ── Esegui install.sh nel CT ─────────────────────────────────
 header "Avvio installazione nel CT"
@@ -194,18 +197,18 @@ warn "Segui le istruzioni a schermo."
 echo ""
 sleep 2
 
-pct exec "$CT_ID" -- bash /opt/reminder/install.sh
+pct exec "$CT_ID" -- bash /opt/farmaci_reminder/install.sh
 
 # ── Recupera IP per riepilogo ────────────────────────────────
 CT_REAL_IP=$(pct exec "$CT_ID" -- hostname -I 2>/dev/null | awk '{print $1}')
 
 echo ""
 echo -e "${GREEN}${BOLD}"
-echo -e "  ✅ CT ${CT_ID} pronto!"
+echo -e "  ✅ CT ${CT_ID} pronto! — FarmaciReminder 💊"
 echo -e "${RESET}"
 echo -e "  🌐 Accedi a: ${CYAN}http://${CT_REAL_IP}:${APP_PORT}${RESET}"
 echo -e "  🖥️  Shell CT: ${CYAN}pct enter ${CT_ID}${RESET}"
-echo -e "  📋 Log app:  ${CYAN}pct exec ${CT_ID} -- journalctl -u reminder -f${RESET}"
-echo -e "  🔄 Riavvia:  ${CYAN}pct exec ${CT_ID} -- systemctl restart reminder${RESET}"
+echo -e "  📋 Log app:  ${CYAN}pct exec ${CT_ID} -- journalctl -u farmaci_reminder -f${RESET}"
+echo -e "  🔄 Riavvia:  ${CYAN}pct exec ${CT_ID} -- systemctl restart farmaci_reminder${RESET}"
 echo ""
 

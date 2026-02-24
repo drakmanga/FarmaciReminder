@@ -6,7 +6,7 @@ from backend.models import LoginRequest
 
 router = APIRouter()
 
-SESSION_COOKIE = "reminder_session"
+SESSION_COOKIE = "farmaci_session"
 SESSION_MAX_AGE = 60 * 60 * 24  # 24 ore
 
 
@@ -35,7 +35,6 @@ def create_default_users():
     conn = get_connection()
     users = [
         ("admin", "admin123", "Europe/Rome"),
-        ("ragazza", "ragazza123", "Europe/Rome"),
     ]
     for username, password, tz in users:
         existing = conn.execute(

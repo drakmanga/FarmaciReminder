@@ -1,6 +1,21 @@
-# 🔔 Reminder System
+# 💊 FarmaciReminder
 
-Self-hosted web system for managing reminders with Telegram notifications, interactive confirmation and automatic scheduler.
+Self-hosted web system for managing medicine expiry dates with automatic Telegram notifications.
+
+Add your medicines with name, purpose and expiry date. The system will automatically alert you when a medicine is about to expire or has already expired.
+
+---
+
+## ✨ Features
+
+- **Medicine management** — add, edit, delete medicines with name, description and expiry date
+- **Expiry warning** — automatic Telegram alert **once** when a medicine enters the 30-day window before expiry
+- **Expired notification** — Telegram alert **every day** as long as the medicine remains expired
+- **Quick renewal** — 🔄 button to update the expiry date of an expired medicine (after purchasing a new one)
+- **Web dashboard** — medical-themed interface, sorting by status/expiry, colored badges
+- **Telegram bot** — `/farmaci` command to get the list of medicines that need attention
+- **Automatic backup** — daily SQLite database backup
+- **Light/dark theme** — toggle available in settings
 
 ---
 
@@ -14,13 +29,8 @@ Copy the project to the Proxmox node, then run:
 bash create_ct.sh
 ```
 
-The script will ask you for:
-- CT ID, hostname, root password
-- Storage, disk size, RAM, CPU
-- Static IP or DHCP + gateway
-- App port
-
-It will then create the CT, copy the project and automatically run `install.sh` inside the CT.
+The script will ask for: CT ID, hostname, root password, storage, disk, RAM, CPU, IP, app port.
+It will create the CT, copy the project and automatically run `install.sh`.
 
 ---
 
@@ -32,15 +42,9 @@ If you already have a Debian 12 CT ready, copy the project folder into the CT an
 bash /path/to/project/install.sh
 ```
 
-The script will ask you for:
-- Installation directory
-- HTTP port
-- Secret key (or auto-generated)
-- Admin username and password
-- Timezone
-- Telegram token and Chat ID (optional, configurable from the UI)
+The script will ask for: installation directory, HTTP port, secret key, admin username/password, timezone, Telegram token and Chat ID (optional, configurable from the UI).
 
-At the end it installs the **systemd** service (`reminder.service`) with automatic startup on boot.
+At the end it installs the **systemd** service (`farmaci_reminder.service`) with automatic startup on boot.
 
 ---
 
@@ -48,16 +52,16 @@ At the end it installs the **systemd** service (`reminder.service`) with automat
 
 ```bash
 # Service status
-systemctl status reminder
+systemctl status farmaci_reminder
 
 # Live logs
-journalctl -u reminder -f
+journalctl -u farmaci_reminder -f
 
 # Restart
-systemctl restart reminder
+systemctl restart farmaci_reminder
 
 # Application log
-tail -f /opt/reminder/logs/app.log
+tail -f /opt/farmaci_reminder/logs/app.log
 ```
 
 ---
@@ -66,10 +70,10 @@ tail -f /opt/reminder/logs/app.log
 
 | Component | Technology |
 |---|---|
-| Backend | Python 3.11 + FastAPI |
-| Scheduler | APScheduler |
+| Backend | Python 3.11+ / FastAPI |
+| Scheduler | APScheduler (daily cron) |
 | Database | SQLite |
-| Frontend | HTML + HTMX |
+| Frontend | HTML + HTMX + Jinja2 |
 | Bot | Telegram (polling) |
 | Deploy | Docker on Proxmox/Debian |
 
@@ -83,7 +87,6 @@ tail -f /opt/reminder/logs/app.log
 telegram_token: "YOUR_BOT_TOKEN"
 chat_ids:
   - 12345678       # your Telegram chat_id
-  - 87654321       # another chat_id
 timezone_default: "Europe/Rome"
 ```
 
@@ -94,9 +97,8 @@ To get your chat_id: talk to [@userinfobot](https://t.me/userinfobot).
 
 Edit `backend/auth.py` in the `create_default_users()` function:
 - User `admin` → password `admin123`
-- User `ragazza` → password `ragazza123`
 
-> ⚠️ **CHANGE THESE PASSWORDS BEFORE DEPLOYING!**
+> ⚠️ **CHANGE THE PASSWORD BEFORE DEPLOYING!**
 
 ---
 
@@ -110,7 +112,7 @@ pip install -r requirements.txt
 python -m backend.main
 ```
 
-The system will be available at: http://localhost:8000
+The system will be available at: **http://localhost:8000**
 
 ---
 
@@ -118,7 +120,6 @@ The system will be available at: http://localhost:8000
 
 ### Prerequisites
 ```bash
-# On Debian/Ubuntu
 apt-get update && apt-get install -y docker.io docker-compose
 ```
 
@@ -126,16 +127,16 @@ apt-get update && apt-get install -y docker.io docker-compose
 
 ```bash
 # 1. Copy the project to the server
-scp -r reminder_project/ user@server:/opt/reminder_project/
+scp -r FarmaciReminder/ user@server:/opt/FarmaciReminder/
 
 # 2. Enter the folder
-cd /opt/reminder_project
+cd /opt/FarmaciReminder
 
 # 3. Create the .env file
 cp .env.example .env
 # Edit .env with a random secret key
 
-# 4. Start with Docker Compose (from the docker/ folder)
+# 4. Start with Docker Compose
 cd docker
 docker compose up -d --build
 
@@ -143,25 +144,15 @@ docker compose up -d --build
 docker compose logs -f
 ```
 
-The system will be available at: http://SERVER_IP:8000
+The system will be available at: **http://SERVER_IP:8000**
 
 ### Useful Docker commands
 
 ```bash
-# Stop the container
-docker compose down
-
-# Restart
-docker compose restart
-
-# Update (after code changes)
-docker compose up -d --build
-
-# Live logs
-docker compose logs -f reminder_app
-
-# Access the container
-docker exec -it reminder_system bash
+docker compose down            # stop the container
+docker compose restart         # restart
+docker compose up -d --build   # update after code changes
+docker compose logs -f         # live logs
 ```
 
 ---
@@ -169,35 +160,36 @@ docker exec -it reminder_system bash
 ## 📁 Project Structure
 
 ```
-reminder_project/
+FarmaciReminder/
 ├── backend/
-│   ├── main.py          # Main FastAPI app + scheduler/bot startup
-│   ├── database.py      # SQLite schema and connection
-│   ├── models.py        # Pydantic models
-│   ├── auth.py          # Authentication + session management
+│   ├── main.py              # FastAPI app + scheduler/bot startup
+│   ├── database.py          # SQLite schema and connection
+│   ├── models.py            # Pydantic models (FarmacoCreate/Update/Out)
+│   ├── auth.py              # Authentication + session management
 │   └── routers/
-│       ├── reminders.py # Reminder CRUD (returns HTML for HTMX)
-│       └── confirm.py   # Reminder confirmation
+│       ├── farmaci.py       # Medicine CRUD (HTML fragments for HTMX)
+│       └── settings.py      # Telegram/Account settings
 ├── scheduler/
-│   ├── scheduler.py     # APScheduler main
-│   ├── jobs.py          # Send and resend reminder logic
-│   ├── backup.py        # Daily DB backup
-│   └── log_manager.py   # Logging with FIFO rotation
+│   ├── scheduler.py         # APScheduler with daily cron
+│   ├── jobs.py              # Expiry check logic + Telegram sending
+│   ├── backup.py            # Daily DB backup
+│   └── log_manager.py       # Logging with FIFO rotation
 ├── bot/
-│   └── bot.py           # Telegram bot polling
+│   └── bot.py               # Telegram bot (/start, /farmaci)
 ├── frontend/
-│   ├── index.html       # Main dashboard (Jinja2 + HTMX)
+│   ├── index.html           # Dashboard (Jinja2 + HTMX)
 │   ├── partials/
-│   │   └── reminders_list.html  # Reminder list HTML fragment
+│   │   └── farmaci_list.html    # Medicine list HTML fragment
 │   └── static/
-│       └── style.css    # Dark theme style
-├── data/                # SQLite DB and backups (persistent, not in git)
-├── logs/                # Application logs (not in git)
+│       ├── style.css        # Medical theme (dark/light)
+│       └── icon.png         # Icon
+├── data/                    # SQLite DB and backups (persistent)
+├── logs/                    # Application logs
 ├── docker/
-│   ├── Dockerfile       # Python 3.11-slim image
+│   ├── Dockerfile
 │   └── docker-compose.yml
-├── config.yaml          # ⚙️ Central configuration
-├── requirements.txt     # Python dependencies
+├── config.yaml              # ⚙️ Central configuration
+├── requirements.txt         # Python dependencies
 └── README.md
 ```
 
@@ -209,48 +201,64 @@ reminder_project/
 |--------|----------|-------------|
 | POST | `/login` | User login |
 | POST | `/logout` | Logout |
-| GET | `/reminders` | Reminder list (HTML fragment) |
-| POST | `/reminders` | Create reminder |
-| PUT | `/reminders/{id}` | Edit reminder |
-| DELETE | `/reminders/{id}` | Soft delete |
-| POST | `/confirm/{execution_id}` | Confirm via web |
-| POST | `/confirm/bot/{execution_id}` | Confirm via bot |
+| GET | `/farmaci` | Medicine list (HTML fragment) |
+| POST | `/farmaci` | Add medicine |
+| PUT | `/farmaci/{id}` | Edit medicine / renew expiry |
+| DELETE | `/farmaci/{id}` | Delete medicine (soft delete) |
+| GET | `/settings` | Current Telegram config |
+| POST | `/settings/token` | Save bot token |
+| POST | `/settings/chat-ids` | Save Chat IDs |
+| POST | `/settings/test` | Send test message |
+| POST | `/settings/account` | Change username/password |
 | GET | `/health` | Healthcheck |
-
----
-
-## 🔁 Supported Recurrences
-
-The `recurrence_json` field accepts:
-
-```json
-{"type": "minutely", "interval": N}   // every N minutes  (1–59)
-{"type": "hourly",   "interval": N}   // every N hours    (1–23)
-{"type": "daily",    "interval": N}   // every N days     (1–6)
-{"type": "weekly",   "interval": N}   // every N weeks    (1–3)
-{"type": "monthly",  "interval": N}   // every N months   (1–11)
-```
-
-> Once the upper limit of each type is exceeded, the next recurrence type takes over (e.g. 60 minutes → hourly, 24 hours → daily, 7 days → weekly, etc.).
 
 ---
 
 ## 🗄️ Database Schema
 
-- **users**: credentials and timezone
-- **reminders**: messages, next execution, status, recurrence
-- **executions**: send and confirmation history
-- **logs**: application logs with rotation
+### farmaci (medicines)
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | INTEGER PK | auto-increment |
+| user_id | INTEGER FK | → users.id |
+| nome | TEXT | max 100 chars — medicine name |
+| descrizione | TEXT | max 500, optional — what it's for |
+| data_scadenza | DATE | expiry date |
+| stato | TEXT | attivo / in_scadenza / scaduto / eliminato |
+| notifica_preavviso_inviata | BOOLEAN | 30-day warning sent |
+| notifica_scaduto_inviata | BOOLEAN | first expired notification sent |
+| ultima_notifica_scaduto | DATE | last daily expired notification date |
+| created_at | TIMESTAMP | creation date |
+| deleted_at | TIMESTAMP | soft delete |
+
+### Other tables
+- **users** — credentials and timezone
+- **settings** — Telegram configuration (key/value)
+- **logs** — application logs with rotation
 
 ---
 
 ## ⚙️ Scheduler Rules
 
-- Reminder check: every **5 seconds**
-- Telegram polling: every **2 seconds**
-- Unconfirmed reminders: **resent every hour, indefinitely**
-- DB backup: every **24 hours**, keeps last **7 backups**
-- Logs: FIFO rotation, max **10 MB**, cleanup at **5 MB**
+- **Expiry check**: every day at **09:00** (Europe/Rome)
+- **Boot check**: runs immediately on startup
+- **Warning**: 1 single notification when a medicine enters the 30-day expiry window
+- **Expired**: 1 notification per day, every day, as long as the medicine remains expired
+- **Renewal**: updating the expiry date resets the status to "attivo" and clears all notification flags
+- **DB backup**: every 24 hours, keeps the last 7 backups
+- **Logs**: FIFO rotation, max 10 MB, cleanup at 5 MB
+
+---
+
+## 🤖 Telegram Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| `/start` | Welcome message |
+| `/farmaci` | List of expiring and expired medicines |
+
+Automatic notifications are sent to the chat_ids configured in settings.
 
 ---
 
@@ -260,20 +268,20 @@ The `recurrence_json` field accepts:
 - Sessions with secure cookie, **24h** timeout
 - Only authorized chat_ids receive Telegram notifications
 - Sanitized input (HTML escape)
-- Telegram token in `config.yaml` (excluded from git)
+- Telegram token stored in `config.yaml` or DB (excluded from git)
 
 ---
 
 ## 🐛 Troubleshooting
 
 **The bot doesn't send messages:**
-- Check that `telegram_token` in `config.yaml` is correct
+- Check that `telegram_token` is correct (config.yaml or UI settings)
 - Verify that `chat_ids` are correct
-- The bot cannot message chats it has never interacted with: send `/start` to the bot first
+- Send `/start` to the bot first
 
 **Login doesn't work:**
-- Default users: `admin`/`admin123` and `ragazza`/`ragazza123`
-- If the DB is corrupted: delete `data/reminder.db` and restart
+- Default user: `admin` / `admin123`
+- If the DB is corrupted: delete `data/farmaci.db` and restart
 
 **Docker: permission denied on data/logs:**
 ```bash

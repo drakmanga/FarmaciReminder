@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "data" / "reminder.db"))
+DB_PATH = os.getenv("DB_PATH", str(BASE_DIR / "data" / "farmaci.db"))
 
 
 def get_connection() -> sqlite3.Connection:
