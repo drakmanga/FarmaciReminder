@@ -62,6 +62,16 @@
                 <div class="actions">
                     {% if f.stato == 'eliminato' %}
                         <button class="btn-icon action-restore" title="Ripristina" data-id="{{ f.id }}">♻️</button>
+                    {% elif f.stato == 'scaduto' %}
+                        <button class="btn-icon btn-renew action-renew" title="Rinnova scadenza"
+                            data-id="{{ f.id }}"
+                            data-nome="{{ f.nome | e }}">🔄</button>
+                        <button class="btn-icon action-edit" title="Modifica"
+                            data-id="{{ f.id }}"
+                            data-nome="{{ f.nome | e }}"
+                            data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
+                            data-scadenza="{{ f.data_scadenza }}">✏️</button>
+                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
                     {% else %}
                         <button class="btn-icon action-edit" title="Modifica"
                             data-id="{{ f.id }}"

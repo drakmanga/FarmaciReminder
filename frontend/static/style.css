@@ -227,6 +227,10 @@ body {
 }
 .btn-icon:hover { background: var(--surface2); color: var(--text); border-color: var(--primary); }
 
+/* Bottone rinnova */
+.btn-renew { border-color: var(--primary); color: var(--primary); }
+.btn-renew:hover { background: var(--primary-dim); color: var(--primary); }
+
 /* ===== FARMACI TABLE ===== */
 .farmaci-table {
     width: 100%;

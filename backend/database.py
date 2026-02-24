@@ -37,6 +37,7 @@ def init_db():
                 CHECK(stato IN ('attivo','in_scadenza','scaduto','eliminato')),
             notifica_preavviso_inviata BOOLEAN NOT NULL DEFAULT 0,
             notifica_scaduto_inviata BOOLEAN NOT NULL DEFAULT 0,
+            ultima_notifica_scaduto DATE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             deleted_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
