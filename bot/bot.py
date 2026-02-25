@@ -82,34 +82,45 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    lines = ["💊 <b>Lista completa farmaci:</b>\n"]
-    for r in rows:
-        stato = r["stato"]
-        if stato == "scaduto":
-            stato_emoji = "🚨"
-        elif stato == "in_scadenza":
-            stato_emoji = "⚠️"
-        else:
-            stato_emoji = "✅"
-
-        desc = f" — <i>{r['descrizione']}</i>" if r["descrizione"] else ""
-
+    def scad_info(r):
         if r["data_scadenza"] is None:
-            scad_str = "∞ Nessuna scadenza"
+            return "∞ Nessuna scadenza"
+        ds = date.fromisoformat(r["data_scadenza"])
+        giorni = (ds - date.today()).days
+        data_fmt = ds.strftime("%d/%m/%Y")
+        if giorni < 0:
+            return f"Scaduto da {abs(giorni)} gg ({data_fmt})"
+        elif giorni == 0:
+            return f"Scade <b>oggi</b> ({data_fmt})"
         else:
-            ds = date.fromisoformat(r["data_scadenza"])
-            giorni = (ds - date.today()).days
-            data_fmt = ds.strftime("%d/%m/%Y")
-            if giorni < 0:
-                scad_str = f"Scaduto da {abs(giorni)} gg ({data_fmt})"
-            elif giorni == 0:
-                scad_str = f"Scade oggi ({data_fmt})"
-            else:
-                scad_str = f"Scade il {data_fmt} (tra {giorni} gg)"
+            return f"Scade il {data_fmt} — tra {giorni} gg"
 
-        lines.append(f"{stato_emoji} <b>{r['nome']}</b>{desc}\n   📅 {scad_str}")
+    def fmt_farmaco(r):
+        desc = f"\n    ✏️ <i>{r['descrizione']}</i>" if r["descrizione"] else ""
+        return f"• <b>{r['nome']}</b>{desc}\n    📅 {scad_info(r)}"
 
-    await update.message.reply_text("\n\n".join(lines), parse_mode="HTML")
+    gruppi = {
+        "scaduto":     ("🚨", "<b>Scaduti</b>"),
+        "in_scadenza": ("⚠️", "<b>In scadenza</b>"),
+        "attivo":      ("✅", "<b>Attivi</b>"),
+    }
+
+    sezioni = []
+    for stato, (emoji, label) in gruppi.items():
+        farmaci_gruppo = [r for r in rows if r["stato"] == stato]
+        if not farmaci_gruppo:
+            continue
+        intestazione = f"{emoji} {label} ({len(farmaci_gruppo)})"
+        corpo = "\n\n".join(fmt_farmaco(r) for r in farmaci_gruppo)
+        sezioni.append(f"{intestazione}\n{corpo}")
+
+    totale = len(rows)
+    testo = (
+        f"💊 <b>I tuoi farmaci</b> — {totale} totali\n"
+        f"━━━━━━━━━━━━━━━\n\n"
+        + "\n\n━━━━━━━━━━━━━━━\n\n".join(sezioni)
+    )
+    await update.message.reply_text(testo, parse_mode="HTML")
 
 
 async def farmaci_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
