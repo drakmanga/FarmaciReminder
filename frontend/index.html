@@ -62,7 +62,7 @@
         <form hx-post="/farmaci"
               hx-target="#farmaci-list"
               hx-swap="innerHTML"
-              hx-on::after-request="clearForm(event)"
+              hx-on::after-request="clearForm(event); _updateCounterScaduti();"
               class="create-form">
             <div class="form-row">
                 <div class="form-group flex-2">
@@ -345,14 +345,16 @@ function confirmDelete(id, nome) {
     pendingDeleteNome = nome;
     document.getElementById('delete-modal').classList.remove('hidden');
     document.getElementById('confirm-delete-btn').onclick = async function() {
+        const deleteId = pendingDeleteId;
+        const deleteNome = pendingDeleteNome;
         closeDeleteModal();
         try {
-            const resp = await fetch(`/farmaci/${pendingDeleteId}`, { method: 'DELETE' });
+            const resp = await fetch(`/farmaci/${deleteId}`, { method: 'DELETE' });
             if (resp.ok) {
                 await _refreshList();
-                showToast(`🗑️ <b>${pendingDeleteNome}</b> eliminato`, 'danger', 5000, async () => {
+                showToast(`🗑️ <b>${deleteNome}</b> eliminato`, 'danger', 5000, async () => {
                     const f = new FormData(); f.append('stato', 'attivo');
-                    await fetch(`/farmaci/${pendingDeleteId}`, { method: 'PUT', body: f });
+                    await fetch(`/farmaci/${deleteId}`, { method: 'PUT', body: f });
                     await _refreshList();
                 });
             } else alert('Errore durante l\'eliminazione');
