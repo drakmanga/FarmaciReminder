@@ -14,6 +14,59 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _run_migrations(conn):
+    """Applica migrazioni incrementali allo schema esistente."""
+    cur = conn.cursor()
+
+    # Controlla che la tabella farmaci esista
+    if not cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='farmaci'"
+    ).fetchone():
+        return
+
+    col_info = {col["name"]: dict(col) for col in cur.execute("PRAGMA table_info(farmaci)").fetchall()}
+
+    # Aggiunge colonne mancanti
+    if "notifica_preavviso_inviata" not in col_info:
+        cur.execute("ALTER TABLE farmaci ADD COLUMN notifica_preavviso_inviata BOOLEAN NOT NULL DEFAULT 0")
+    if "notifica_scaduto_inviata" not in col_info:
+        cur.execute("ALTER TABLE farmaci ADD COLUMN notifica_scaduto_inviata BOOLEAN NOT NULL DEFAULT 0")
+    if "ultima_notifica_scaduto" not in col_info:
+        cur.execute("ALTER TABLE farmaci ADD COLUMN ultima_notifica_scaduto DATE")
+    conn.commit()
+
+    # Rende data_scadenza nullable se non lo è già
+    col_info = {col["name"]: dict(col) for col in cur.execute("PRAGMA table_info(farmaci)").fetchall()}
+    if col_info.get("data_scadenza", {}).get("notnull", 0) == 1:
+        cur.executescript("""
+            PRAGMA foreign_keys=OFF;
+            CREATE TABLE farmaci_migration (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                nome TEXT NOT NULL CHECK(length(nome) <= 100),
+                descrizione TEXT CHECK(length(descrizione) <= 500),
+                data_scadenza DATE,
+                stato TEXT NOT NULL DEFAULT 'attivo'
+                    CHECK(stato IN ('attivo','in_scadenza','scaduto','eliminato')),
+                notifica_preavviso_inviata BOOLEAN NOT NULL DEFAULT 0,
+                notifica_scaduto_inviata BOOLEAN NOT NULL DEFAULT 0,
+                ultima_notifica_scaduto DATE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                deleted_at TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            INSERT INTO farmaci_migration
+            SELECT id, user_id, nome, descrizione, data_scadenza, stato,
+                   notifica_preavviso_inviata, notifica_scaduto_inviata,
+                   ultima_notifica_scaduto, created_at, deleted_at
+            FROM farmaci;
+            DROP TABLE farmaci;
+            ALTER TABLE farmaci_migration RENAME TO farmaci;
+            PRAGMA foreign_keys=ON;
+        """)
+        conn.commit()
+
+
 def init_db():
     conn = get_connection()
     cur = conn.cursor()
@@ -58,6 +111,7 @@ def init_db():
     """)
 
     conn.commit()
+    _run_migrations(conn)
     conn.close()
 
 
