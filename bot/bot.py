@@ -82,44 +82,34 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    def scad_info(r):
-        if r["data_scadenza"] is None:
-            return "∞ Nessuna scadenza"
-        ds = date.fromisoformat(r["data_scadenza"])
-        giorni = (ds - date.today()).days
-        data_fmt = ds.strftime("%d/%m/%Y")
-        if giorni < 0:
-            return f"Scaduto da {abs(giorni)} gg ({data_fmt})"
-        elif giorni == 0:
-            return f"Scade <b>oggi</b> ({data_fmt})"
-        else:
-            return f"Scade il {data_fmt} — tra {giorni} gg"
-
     def fmt_farmaco(r):
-        desc = f"\n    ✏️ <i>{r['descrizione']}</i>" if r["descrizione"] else ""
-        return f"• <b>{r['nome']}</b>{desc}\n    📅 {scad_info(r)}"
+        stato = r["stato"]
+        if stato == "scaduto":
+            emoji = "🚨"
+        elif stato == "in_scadenza":
+            emoji = "⚠️"
+        else:
+            emoji = "✅"
 
-    gruppi = {
-        "scaduto":     ("🚨", "<b>Scaduti</b>"),
-        "in_scadenza": ("⚠️", "<b>In scadenza</b>"),
-        "attivo":      ("✅", "<b>Attivi</b>"),
-    }
+        desc = f" {r['descrizione']}" if r["descrizione"] else ""
+        riga1 = f"{emoji} <b>{r['nome']}</b>{desc}"
 
-    sezioni = []
-    for stato, (emoji, label) in gruppi.items():
-        farmaci_gruppo = [r for r in rows if r["stato"] == stato]
-        if not farmaci_gruppo:
-            continue
-        intestazione = f"{emoji} {label} ({len(farmaci_gruppo)})"
-        corpo = "\n\n".join(fmt_farmaco(r) for r in farmaci_gruppo)
-        sezioni.append(f"{intestazione}\n{corpo}")
+        if r["data_scadenza"] is None:
+            riga2 = "📅 Nessuna scadenza"
+        else:
+            ds = date.fromisoformat(r["data_scadenza"])
+            giorni = (ds - date.today()).days
+            data_fmt = ds.strftime("%d/%m/%Y")
+            if giorni < 0:
+                riga2 = f"📅 Scaduto da {abs(giorni)} gg ({data_fmt})"
+            elif giorni == 0:
+                riga2 = f"📅 Scade oggi ({data_fmt})"
+            else:
+                riga2 = f"📅 Scade il {data_fmt} (tra {giorni} gg)"
 
-    totale = len(rows)
-    testo = (
-        f"💊 <b>I tuoi farmaci</b> — {totale} totali\n"
-        f"━━━━━━━━━━━━━━━\n\n"
-        + "\n\n━━━━━━━━━━━━━━━\n\n".join(sezioni)
-    )
+        return f"{riga1}\n{riga2}"
+
+    testo = f"💊 <b>Farmaci ({len(rows)})</b>\n\n" + "\n\n".join(fmt_farmaco(r) for r in rows)
     await update.message.reply_text(testo, parse_mode="HTML")
 
 
