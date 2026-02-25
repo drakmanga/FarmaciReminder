@@ -305,7 +305,6 @@ body {
 
 /* ===== COUNTER SCADUTI ===== */
 .counter-scaduti {
-    appearance: none;
     display: inline-flex;
     align-items: center;
     margin-left: .6rem;
