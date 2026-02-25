@@ -279,7 +279,7 @@ function handleLoginResponse(event) {
 
 // ---- FORM CLEAR ----
 function clearForm(event) {
-    if (event.detail.successful) {
+    if (event.detail.xhr && event.detail.xhr.status < 400) {
         event.target.reset();
         showToast('✅ Farmaco aggiunto');
     }
