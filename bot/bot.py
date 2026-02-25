@@ -47,6 +47,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "  🚨 <b>è scaduto</b>\n\n"
         "Comandi disponibili:\n"
         "/lista — Lista completa di tutti i farmaci\n"
+        "/cerca [nome] — Cerca un farmaco per nome\n"
         "/farmaci — Solo farmaci in scadenza o scaduti\n"
         "/start — Mostra questo messaggio",
         parse_mode="HTML"
@@ -104,6 +105,63 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(testo, parse_mode="HTML")
 
 
+async def cerca_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not _is_authorized(update):
+        await update.message.reply_text("⛔ Non autorizzato.")
+        return
+
+    query = " ".join(context.args).strip() if context.args else ""
+    if not query:
+        await update.message.reply_text(
+            "🔍 Uso: <code>/cerca nome</code>\nEsempio: <code>/cerca tachipirina</code>",
+            parse_mode="HTML"
+        )
+        return
+
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT nome, descrizione, data_scadenza, stato
+           FROM farmaci
+           WHERE stato != 'eliminato' AND lower(nome) LIKE lower(?)
+           ORDER BY nome ASC""",
+        (f"%{query}%",)
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        await update.message.reply_text(
+            f"🔍 Nessun farmaco trovato per <b>{query}</b>.",
+            parse_mode="HTML"
+        )
+        return
+
+    def fmt_farmaco(r):
+        if r["stato"] == "scaduto":
+            emoji = "🚨"
+        elif r["stato"] == "in_scadenza":
+            emoji = "⚠️"
+        else:
+            emoji = "✅"
+        desc = f" — {r['descrizione']}" if r["descrizione"] else ""
+        riga1 = f"{emoji} {r['nome']}{desc}"
+        if r["data_scadenza"] is None:
+            riga2 = "   📅 ∞ Nessuna scadenza"
+        else:
+            ds = date.fromisoformat(r["data_scadenza"])
+            giorni = (ds - date.today()).days
+            data_fmt = ds.strftime("%d/%m/%Y")
+            if giorni < 0:
+                riga2 = f"   📅 Scaduto da {abs(giorni)} gg ({data_fmt})"
+            elif giorni == 0:
+                riga2 = f"   📅 Scade oggi ({data_fmt})"
+            else:
+                riga2 = f"   📅 Scade il {data_fmt} (tra {giorni} gg)"
+        return f"{riga1}\n{riga2}"
+
+    testo = f"🔍 <b>Risultati per \"{query}\":</b>\n\n" + "\n\n".join(fmt_farmaco(r) for r in rows)
+    await update.message.reply_text(testo, parse_mode="HTML")
+
+
 async def farmaci_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not _is_authorized(update):
         await update.message.reply_text("⛔ Non autorizzato.")
@@ -157,6 +215,7 @@ def start_bot():
         app = ApplicationBuilder().token(token).build()
         app.add_handler(CommandHandler("start", start_command))
         app.add_handler(CommandHandler("lista", lista_command))
+        app.add_handler(CommandHandler("cerca", cerca_command))
         app.add_handler(CommandHandler("farmaci", farmaci_command))
 
         await app.initialize()

@@ -303,6 +303,22 @@ body {
 /* ===== ACTIONS ===== */
 .actions { display: flex; gap: 0.4rem; }
 
+/* ===== SEARCH BAR ===== */
+.search-bar { margin: .8rem 0; }
+.search-bar input {
+    width: 100%;
+    max-width: 320px;
+    padding: .45rem .75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .15s;
+}
+.search-bar input:focus { border-color: var(--primary); }
+
 /* ===== FILTER BUTTON ===== */
 .filter-btn {
     background: transparent;

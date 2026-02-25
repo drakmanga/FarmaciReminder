@@ -98,6 +98,9 @@
                 <button class="filter-btn filter-deleted" id="toggle-deleted" onclick="toggleDeleted()">🗑️ Mostra eliminati</button>
             </div>
         </div>
+        <div class="search-bar">
+            <input type="text" id="search-farmaci" placeholder="🔍 Cerca per nome..." oninput="filterFarmaci(this.value)">
+        </div>
         <div id="farmaci-list">
             <div class="loading">Caricamento...</div>
         </div>
@@ -477,6 +480,15 @@ function initTheme() {
     if (hint) hint.textContent = isLight ? 'Tema chiaro attivo' : 'Tema scuro attivo';
 }
 
+// ---- RICERCA ----
+function filterFarmaci(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#farmaci-list tbody tr').forEach(row => {
+        const nome = row.querySelector('.farmaco-nome-text')?.textContent.toLowerCase() || '';
+        row.style.display = nome.includes(q) ? '' : 'none';
+    });
+}
+
 // ---- FILTRI + POLLING ----
 let _currentSort = 'scadenza';
 let _showDeleted = false;
@@ -491,6 +503,8 @@ async function _refreshList() {
             const html = await resp.text();
             const list = document.getElementById('farmaci-list');
             if (list) { list.innerHTML = html; htmx.process(list); }
+            const searchInput = document.getElementById('search-farmaci');
+            if (searchInput && searchInput.value) filterFarmaci(searchInput.value);
         }
     } catch(e) {}
 }
