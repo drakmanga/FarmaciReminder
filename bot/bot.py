@@ -46,10 +46,70 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "  ⚠️ <b>è in scadenza</b> (entro 30 giorni)\n"
         "  🚨 <b>è scaduto</b>\n\n"
         "Comandi disponibili:\n"
-        "/farmaci — Lista farmaci in scadenza o scaduti\n"
+        "/lista — Lista completa di tutti i farmaci\n"
+        "/farmaci — Solo farmaci in scadenza o scaduti\n"
         "/start — Mostra questo messaggio",
         parse_mode="HTML"
     )
+
+
+async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not _is_authorized(update):
+        await update.message.reply_text("⛔ Non autorizzato.")
+        return
+
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT nome, descrizione, data_scadenza, stato
+           FROM farmaci
+           WHERE stato != 'eliminato'
+           ORDER BY
+               CASE stato
+                   WHEN 'scaduto'     THEN 1
+                   WHEN 'in_scadenza' THEN 2
+                   WHEN 'attivo'      THEN 3
+                   ELSE 4
+               END,
+               data_scadenza IS NULL,
+               data_scadenza ASC"""
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        await update.message.reply_text(
+            "💊 <b>Nessun farmaco registrato.</b>",
+            parse_mode="HTML"
+        )
+        return
+
+    lines = ["💊 <b>Lista completa farmaci:</b>\n"]
+    for r in rows:
+        stato = r["stato"]
+        if stato == "scaduto":
+            stato_emoji = "🚨"
+        elif stato == "in_scadenza":
+            stato_emoji = "⚠️"
+        else:
+            stato_emoji = "✅"
+
+        desc = f" — <i>{r['descrizione']}</i>" if r.get("descrizione") else ""
+
+        if r["data_scadenza"] is None:
+            scad_str = "∞ Nessuna scadenza"
+        else:
+            ds = date.fromisoformat(r["data_scadenza"])
+            giorni = (ds - date.today()).days
+            data_fmt = ds.strftime("%d/%m/%Y")
+            if giorni < 0:
+                scad_str = f"Scaduto da {abs(giorni)} gg ({data_fmt})"
+            elif giorni == 0:
+                scad_str = f"Scade oggi ({data_fmt})"
+            else:
+                scad_str = f"Scade il {data_fmt} (tra {giorni} gg)"
+
+        lines.append(f"{stato_emoji} <b>{r['nome']}</b>{desc}\n   📅 {scad_str}")
+
+    await update.message.reply_text("\n\n".join(lines), parse_mode="HTML")
 
 
 async def farmaci_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,6 +164,7 @@ def start_bot():
     async def _run():
         app = ApplicationBuilder().token(token).build()
         app.add_handler(CommandHandler("start", start_command))
+        app.add_handler(CommandHandler("lista", lista_command))
         app.add_handler(CommandHandler("farmaci", farmaci_command))
 
         await app.initialize()
