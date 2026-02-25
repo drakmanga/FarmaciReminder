@@ -63,15 +63,7 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         """SELECT nome, descrizione, data_scadenza, stato
            FROM farmaci
            WHERE stato != 'eliminato'
-           ORDER BY
-               CASE stato
-                   WHEN 'scaduto'     THEN 1
-                   WHEN 'in_scadenza' THEN 2
-                   WHEN 'attivo'      THEN 3
-                   ELSE 4
-               END,
-               data_scadenza IS NULL,
-               data_scadenza ASC"""
+           ORDER BY nome ASC"""
     ).fetchall()
     conn.close()
 
@@ -83,33 +75,32 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     def fmt_farmaco(r):
-        stato = r["stato"]
-        if stato == "scaduto":
+        if r["stato"] == "scaduto":
             emoji = "🚨"
-        elif stato == "in_scadenza":
+        elif r["stato"] == "in_scadenza":
             emoji = "⚠️"
         else:
             emoji = "✅"
 
-        desc = f" {r['descrizione']}" if r["descrizione"] else ""
-        riga1 = f"{emoji} <b>{r['nome']}</b>{desc}"
+        desc = f" — {r['descrizione']}" if r["descrizione"] else ""
+        riga1 = f"{emoji} {r['nome']}{desc}"
 
         if r["data_scadenza"] is None:
-            riga2 = "📅 Nessuna scadenza"
+            riga2 = "   📅 ∞ Nessuna scadenza"
         else:
             ds = date.fromisoformat(r["data_scadenza"])
             giorni = (ds - date.today()).days
             data_fmt = ds.strftime("%d/%m/%Y")
             if giorni < 0:
-                riga2 = f"📅 Scaduto da {abs(giorni)} gg ({data_fmt})"
+                riga2 = f"   📅 Scaduto da {abs(giorni)} gg ({data_fmt})"
             elif giorni == 0:
-                riga2 = f"📅 Scade oggi ({data_fmt})"
+                riga2 = f"   📅 Scade oggi ({data_fmt})"
             else:
-                riga2 = f"📅 Scade il {data_fmt} (tra {giorni} gg)"
+                riga2 = f"   📅 Scade il {data_fmt} (tra {giorni} gg)"
 
         return f"{riga1}\n{riga2}"
 
-    testo = f"💊 <b>Farmaci ({len(rows)})</b>\n\n" + "\n\n".join(fmt_farmaco(r) for r in rows)
+    testo = f"💊 <b>Lista completa farmaci:</b>\n\n" + "\n\n".join(fmt_farmaco(r) for r in rows)
     await update.message.reply_text(testo, parse_mode="HTML")
 
 
