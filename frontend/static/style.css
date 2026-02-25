@@ -304,45 +304,7 @@ body {
 .actions { display: flex; gap: 0.4rem; }
 
 /* ===== SEARCH BAR ===== */
-.search-bar {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-    margin: .4rem 0 1rem;
-}
-#search-farmaci {
-    background: var(--surface2);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.95rem;
-    font-family: inherit;
-    outline: none;
-    width: 320px;
-    max-width: 100%;
-    transition: border-color .15s, box-shadow .15s;
-}
-#search-farmaci::placeholder { color: var(--text-muted); }
-#search-farmaci:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-dim);
-}
-.search-clear {
-    appearance: none;
-    background: none;
-    border: none;
-    color: #ef5350;
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1;
-    padding: .3rem .4rem;
-    border-radius: 5px;
-    transition: background .15s;
-}
-.search-clear:hover { background: rgba(239,83,80,.15); }
-.search-clear.hidden { display: none; }
+.search-bar { margin: .4rem 0 1rem; }
 
 /* ===== FILTER BUTTON ===== */
 .filter-btn {
