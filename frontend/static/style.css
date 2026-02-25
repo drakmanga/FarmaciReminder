@@ -303,6 +303,26 @@ body {
 /* ===== ACTIONS ===== */
 .actions { display: flex; gap: 0.4rem; }
 
+/* ===== COUNTER SCADUTI ===== */
+.counter-scaduti {
+    display: inline-flex;
+    align-items: center;
+    margin-left: .6rem;
+    padding: .2rem .65rem;
+    background: rgba(239,83,80,.15);
+    border: 1px solid var(--scaduto);
+    color: var(--scaduto);
+    border-radius: 20px;
+    font-size: .8rem;
+    font-weight: 700;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background .15s, transform .1s;
+}
+.counter-scaduti:hover { background: rgba(239,83,80,.28); }
+.counter-scaduti.active { background: var(--scaduto); color: #fff; }
+.counter-scaduti.hidden { display: none; }
+
 /* ===== SEARCH BAR ===== */
 .search-bar { margin: .4rem 0 1rem; }
 

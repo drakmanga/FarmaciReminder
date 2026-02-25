@@ -1,5 +1,7 @@
+import csv
+import io
 from fastapi import APIRouter, HTTPException, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from backend.database import get_connection
 from backend.auth import get_current_user
@@ -223,6 +225,38 @@ async def update_farmaco(
     conn.close()
     sort, show_deleted = _filter_params(request)
     return _get_farmaci_html(request, current_user["id"], sort, show_deleted)
+
+
+@router.get("/export/csv")
+async def export_csv(current_user: dict = Depends(get_current_user)):
+    conn = get_connection()
+    rows = conn.execute(
+        """SELECT nome, descrizione, data_scadenza, stato
+           FROM farmaci
+           WHERE user_id = ? AND stato != 'eliminato'
+           ORDER BY nome ASC""",
+        (current_user["id"],),
+    ).fetchall()
+    conn.close()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Nome", "Indicazione", "Data Scadenza", "Stato"])
+    for r in rows:
+        writer.writerow([
+            r["nome"],
+            r["descrizione"] or "",
+            r["data_scadenza"] or "Nessuna scadenza",
+            r["stato"],
+        ])
+
+    output.seek(0)
+    filename = f"farmaci_{date.today().isoformat()}.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @router.delete("/{farmaco_id}", response_class=HTMLResponse)

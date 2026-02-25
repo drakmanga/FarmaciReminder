@@ -87,7 +87,7 @@
     <!-- LISTA FARMACI -->
     <section class="card">
         <div class="section-header">
-            <h2>📦 I tuoi Farmaci</h2>
+            <h2>📦 I tuoi Farmaci <button class="counter-scaduti hidden" id="counter-scaduti" onclick="toggleFilterScaduti()"></button></h2>
             <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
                 <div class="legend">
                     <span class="badge badge-attivo">✅ Attivo</span>
@@ -96,6 +96,7 @@
                     <span class="badge badge-no-scadenza">∞ Nessuna scadenza</span>
                 </div>
                 <button class="filter-btn filter-deleted" id="toggle-deleted" onclick="toggleDeleted()">🗑️ Mostra eliminati</button>
+                <a class="filter-btn" href="/farmaci/export/csv" download title="Esporta lista in CSV">📥 Esporta CSV</a>
             </div>
         </div>
         <div class="search-bar">
@@ -483,6 +484,37 @@ function initTheme() {
     if (hint) hint.textContent = isLight ? 'Tema chiaro attivo' : 'Tema scuro attivo';
 }
 
+// ---- CONTATORE SCADUTI ----
+let _filterScaduti = false;
+
+function _updateCounterScaduti() {
+    const count = document.querySelectorAll('#farmaci-list tbody tr.row-scaduto').length;
+    const btn = document.getElementById('counter-scaduti');
+    if (!btn) return;
+    if (count === 0) {
+        btn.classList.add('hidden');
+        if (_filterScaduti) toggleFilterScaduti();
+    } else {
+        btn.textContent = `🚨 ${count} scadut${count === 1 ? 'o' : 'i'}`;
+        btn.classList.remove('hidden');
+    }
+}
+
+function toggleFilterScaduti() {
+    _filterScaduti = !_filterScaduti;
+    const btn = document.getElementById('counter-scaduti');
+    if (btn) btn.classList.toggle('active', _filterScaduti);
+    document.querySelectorAll('#farmaci-list tbody tr').forEach(row => {
+        if (_filterScaduti) {
+            row.style.display = row.classList.contains('row-scaduto') ? '' : 'none';
+        } else {
+            const q = document.getElementById('search-farmaci')?.value.toLowerCase() || '';
+            const nome = row.querySelector('.farmaco-nome-text')?.textContent.toLowerCase() || '';
+            row.style.display = (!q || nome.includes(q)) ? '' : 'none';
+        }
+    });
+}
+
 // ---- RICERCA ----
 function filterFarmaci(query) {
     const q = query.toLowerCase();
@@ -493,7 +525,7 @@ function filterFarmaci(query) {
 }
 
 // ---- FILTRI + POLLING ----
-let _currentSort = 'scadenza';
+let _currentSort = localStorage.getItem('sort') || 'scadenza';
 let _showDeleted = false;
 let _pollTimer = null;
 const POLL_INTERVAL = 60000;
@@ -506,6 +538,7 @@ async function _refreshList() {
             const html = await resp.text();
             const list = document.getElementById('farmaci-list');
             if (list) { list.innerHTML = html; htmx.process(list); }
+            _updateCounterScaduti();
             const searchInput = document.getElementById('search-farmaci');
             if (searchInput && searchInput.value) filterFarmaci(searchInput.value);
         }
@@ -515,7 +548,7 @@ function _startPolling() {
     if (_pollTimer) clearInterval(_pollTimer);
     _pollTimer = setInterval(() => { if (!document.hidden) _refreshList(); }, POLL_INTERVAL);
 }
-function setSort(sort) { _currentSort = sort; _refreshList(); }
+function setSort(sort) { _currentSort = sort; localStorage.setItem('sort', sort); _refreshList(); }
 function toggleDeleted() {
     _showDeleted = !_showDeleted;
     const btn = document.getElementById('toggle-deleted');
