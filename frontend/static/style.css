@@ -307,21 +307,25 @@ body {
 .counter-scaduti {
     display: inline-flex;
     align-items: center;
-    margin-left: .6rem;
-    padding: .2rem .7rem;
-    background: rgba(239,83,80,.12);
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    border-radius: 6px;
-    font-size: .78rem;
-    font-weight: 600;
+    gap: .3rem;
+    margin-left: .7rem;
+    padding: .25rem .8rem;
+    background: var(--danger);
+    color: #fff;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 700;
     font-family: inherit;
     cursor: pointer;
     vertical-align: middle;
+    user-select: none;
+    box-shadow: 0 2px 6px rgba(239,83,80,.4);
     transition: all .15s ease;
 }
-.counter-scaduti:hover { background: rgba(239,83,80,.22); }
-.counter-scaduti.active { background: var(--danger); color: #fff; }
+.counter-scaduti::after { content: '›'; font-size: .9rem; }
+.counter-scaduti:hover { background: #c62828; box-shadow: 0 3px 10px rgba(239,83,80,.55); }
+.counter-scaduti.active { background: #c62828; box-shadow: none; }
+.counter-scaduti.active::after { content: '✕'; font-size: .75rem; }
 .counter-scaduti.hidden { display: none; }
 
 /* ===== SEARCH BAR ===== */
