@@ -237,30 +237,7 @@
     </div>
 </div>
 
-<div id="toast-container"></div>
-
 <script>
-// ---- TOAST ----
-function showToast(message, type = 'success', duration = 3500, onUndo = null) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    if (onUndo) {
-        const btn = document.createElement('button');
-        btn.className = 'toast-undo';
-        btn.textContent = 'Annulla';
-        btn.onclick = () => { onUndo(); toast.remove(); };
-        toast.appendChild(btn);
-    }
-    container.appendChild(toast);
-    const timer = setTimeout(() => {
-        toast.classList.add('toast-out');
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
-    if (onUndo) toast.querySelector('.toast-undo').addEventListener('click', () => clearTimeout(timer));
-}
-
 // ---- LOGIN ----
 function handleLoginResponse(event) {
     if (event.detail.successful) {
@@ -279,10 +256,7 @@ function handleLoginResponse(event) {
 
 // ---- FORM CLEAR ----
 function clearForm(event) {
-    if (event.detail.xhr && event.detail.xhr.status < 400) {
-        event.target.reset();
-        showToast('✅ Farmaco aggiunto');
-    }
+    event.target.reset();
 }
 
 // ---- EDIT MODAL ----
@@ -350,14 +324,8 @@ function confirmDelete(id, nome) {
         closeDeleteModal();
         try {
             const resp = await fetch(`/farmaci/${deleteId}`, { method: 'DELETE' });
-            if (resp.ok) {
-                await _refreshList();
-                showToast(`🗑️ <b>${deleteNome}</b> eliminato`, 'danger', 5000, async () => {
-                    const f = new FormData(); f.append('stato', 'attivo');
-                    await fetch(`/farmaci/${deleteId}`, { method: 'PUT', body: f });
-                    await _refreshList();
-                });
-            } else alert('Errore durante l\'eliminazione');
+            if (resp.ok) await _refreshList();
+            else alert('Errore durante l\'eliminazione');
         } catch(e) { alert('Errore di rete: ' + e.message); }
     };
 }
