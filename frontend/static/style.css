@@ -305,22 +305,24 @@ body {
 
 /* ===== COUNTER SCADUTI ===== */
 .counter-scaduti {
+    appearance: none;
     display: inline-flex;
     align-items: center;
     margin-left: .6rem;
-    padding: .2rem .65rem;
-    background: rgba(239,83,80,.15);
-    border: 1px solid var(--scaduto);
-    color: var(--scaduto);
-    border-radius: 20px;
-    font-size: .8rem;
-    font-weight: 700;
+    padding: .2rem .7rem;
+    background: rgba(239,83,80,.12);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    border-radius: 6px;
+    font-size: .78rem;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
     vertical-align: middle;
-    transition: background .15s, transform .1s;
+    transition: all .15s ease;
 }
-.counter-scaduti:hover { background: rgba(239,83,80,.28); }
-.counter-scaduti.active { background: var(--scaduto); color: #fff; }
+.counter-scaduti:hover { background: rgba(239,83,80,.22); }
+.counter-scaduti.active { background: var(--danger); color: #fff; }
 .counter-scaduti.hidden { display: none; }
 
 /* ===== SEARCH BAR ===== */
