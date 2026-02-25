@@ -92,7 +92,7 @@ async def lista_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             stato_emoji = "✅"
 
-        desc = f" — <i>{r['descrizione']}</i>" if r.get("descrizione") else ""
+        desc = f" — <i>{r['descrizione']}</i>" if r["descrizione"] else ""
 
         if r["data_scadenza"] is None:
             scad_str = "∞ Nessuna scadenza"
@@ -146,7 +146,7 @@ async def farmaci_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             scad_str = f"<b>Scaduto da {abs(giorni)} giorni</b> ({data_fmt})"
         else:
             scad_str = f"Scade il {data_fmt} (tra {giorni} giorni)"
-        desc = f" — <i>{r['descrizione']}</i>" if r.get("descrizione") else ""
+        desc = f" — <i>{r['descrizione']}</i>" if r["descrizione"] else ""
         lines.append(f"{stato_emoji} <b>{r['nome']}</b>{desc}\n   📅 {scad_str}")
 
     await update.message.reply_text("\n\n".join(lines), parse_mode="HTML")
