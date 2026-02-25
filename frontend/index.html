@@ -87,7 +87,7 @@
     <!-- LISTA FARMACI -->
     <section class="card">
         <div class="section-header">
-            <h2>📦 I tuoi Farmaci <span class="counter-scaduti hidden" id="counter-scaduti" onclick="toggleFilterScaduti()"></span></h2>
+            <h2>📦 I tuoi Farmaci</h2>
             <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
                 <div class="legend">
                     <span class="badge badge-attivo">✅ Attivo</span>
@@ -95,6 +95,7 @@
                     <span class="badge badge-scaduto">🚨 Scaduto</span>
                     <span class="badge badge-no-scadenza">∞ Nessuna scadenza</span>
                 </div>
+                <button class="filter-btn hidden" id="counter-scaduti" onclick="toggleFilterScaduti()"></button>
                 <button class="filter-btn filter-deleted" id="toggle-deleted" onclick="toggleDeleted()">🗑️ Mostra eliminati</button>
                 <a class="filter-btn" href="/farmaci/export/csv" download title="Esporta lista in CSV">📥 Esporta CSV</a>
             </div>
