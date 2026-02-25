@@ -99,11 +99,11 @@
             </div>
         </div>
         <div class="search-bar">
-            <div class="search-wrap">
+            <div class="form-group" style="max-width:320px;margin:0">
                 <input type="text" id="search-farmaci" placeholder="🔍 Cerca farmaco per nome..."
                        oninput="filterFarmaci(this.value)">
-                <button class="search-clear hidden" id="search-clear" onclick="clearSearch()" title="Cancella">✕</button>
             </div>
+            <button class="search-clear hidden" id="search-clear" onclick="clearSearch()" title="Cancella">✕</button>
         </div>
         <div id="farmaci-list">
             <div class="loading">Caricamento...</div>
