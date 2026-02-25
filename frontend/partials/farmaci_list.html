@@ -73,14 +73,14 @@
                             data-nome="{{ f.nome | e }}"
                             data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
                             data-scadenza="{{ f.data_scadenza or '' }}">✏️</button>
-                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
+                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}" data-nome="{{ f.nome | e }}">🗑️</button>
                     {% else %}
                         <button class="btn-icon action-edit" title="Modifica"
                             data-id="{{ f.id }}"
                             data-nome="{{ f.nome | e }}"
                             data-descrizione="{{ f.descrizione | e if f.descrizione else '' }}"
                             data-scadenza="{{ f.data_scadenza or '' }}">✏️</button>
-                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}">🗑️</button>
+                        <button class="btn-icon action-delete" title="Elimina" data-id="{{ f.id }}" data-nome="{{ f.nome | e }}">🗑️</button>
                     {% endif %}
                 </div>
             </td>

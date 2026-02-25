@@ -303,6 +303,47 @@ body {
 /* ===== ACTIONS ===== */
 .actions { display: flex; gap: 0.4rem; }
 
+/* ===== TOAST ===== */
+#toast-container {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    z-index: 9999;
+}
+.toast {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    padding: .7rem 1.1rem;
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0,0,0,.35);
+    animation: toast-in .25s ease;
+    max-width: 320px;
+}
+.toast-success { background: var(--surface2); border: 1px solid var(--success); color: var(--text); }
+.toast-danger  { background: var(--surface2); border: 1px solid var(--danger);  color: var(--text); }
+.toast-out { animation: toast-out .3s ease forwards; }
+.toast-undo {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--primary);
+    border-radius: 6px;
+    padding: .2rem .6rem;
+    font-size: .82rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s;
+}
+.toast-undo:hover { background: var(--primary-dim); }
+@keyframes toast-in  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(0); }    to { opacity:0; transform:translateY(12px); } }
+
 /* ===== COUNTER SCADUTI ===== */
 #counter-scaduti { border-color: var(--danger); color: var(--danger); }
 #counter-scaduti:hover { border-color: var(--danger); color: var(--danger); }

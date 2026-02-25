@@ -237,7 +237,30 @@
     </div>
 </div>
 
+<div id="toast-container"></div>
+
 <script>
+// ---- TOAST ----
+function showToast(message, type = 'success', duration = 3500, onUndo = null) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `<span>${message}</span>`;
+    if (onUndo) {
+        const btn = document.createElement('button');
+        btn.className = 'toast-undo';
+        btn.textContent = 'Annulla';
+        btn.onclick = () => { onUndo(); toast.remove(); };
+        toast.appendChild(btn);
+    }
+    container.appendChild(toast);
+    const timer = setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+    if (onUndo) toast.querySelector('.toast-undo').addEventListener('click', () => clearTimeout(timer));
+}
+
 // ---- LOGIN ----
 function handleLoginResponse(event) {
     if (event.detail.successful) {
@@ -258,6 +281,7 @@ function handleLoginResponse(event) {
 function clearForm(event) {
     if (event.detail.successful) {
         event.target.reset();
+        showToast('✅ Farmaco aggiunto');
     }
 }
 
@@ -315,16 +339,24 @@ async function restoreFarmaco(id) {
 
 // ---- DELETE MODAL ----
 let pendingDeleteId = null;
-function confirmDelete(id) {
+let pendingDeleteNome = null;
+function confirmDelete(id, nome) {
     pendingDeleteId = id;
+    pendingDeleteNome = nome;
     document.getElementById('delete-modal').classList.remove('hidden');
     document.getElementById('confirm-delete-btn').onclick = async function() {
+        closeDeleteModal();
         try {
             const resp = await fetch(`/farmaci/${pendingDeleteId}`, { method: 'DELETE' });
-            if (resp.ok) await _refreshList();
-            else alert('Errore durante l\'eliminazione');
+            if (resp.ok) {
+                await _refreshList();
+                showToast(`🗑️ <b>${pendingDeleteNome}</b> eliminato`, 'danger', 5000, async () => {
+                    const f = new FormData(); f.append('stato', 'attivo');
+                    await fetch(`/farmaci/${pendingDeleteId}`, { method: 'PUT', body: f });
+                    await _refreshList();
+                });
+            } else alert('Errore durante l\'eliminazione');
         } catch(e) { alert('Errore di rete: ' + e.message); }
-        closeDeleteModal();
     };
 }
 function closeDeleteModal() {
@@ -584,7 +616,7 @@ document.addEventListener('click', function(e) {
     const restoreBtn = e.target.closest('.action-restore');
     const renewBtn   = e.target.closest('.action-renew');
     if (editBtn)    openEditModal(editBtn.dataset.id, editBtn.dataset.nome, editBtn.dataset.descrizione || '', editBtn.dataset.scadenza);
-    if (deleteBtn)  confirmDelete(deleteBtn.dataset.id);
+    if (deleteBtn)  confirmDelete(deleteBtn.dataset.id, deleteBtn.dataset.nome);
     if (restoreBtn) restoreFarmaco(restoreBtn.dataset.id);
     if (renewBtn)   openRenewModal(renewBtn.dataset.id, renewBtn.dataset.nome);
 });
