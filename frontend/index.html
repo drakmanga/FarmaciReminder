@@ -99,7 +99,15 @@
             </div>
         </div>
         <div class="search-bar">
-            <input type="text" id="search-farmaci" placeholder="🔍 Cerca per nome..." oninput="filterFarmaci(this.value)">
+            <div class="search-input-wrap">
+                <svg class="search-icon-svg" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.6"/>
+                    <line x1="12.5" y1="12.5" x2="17" y2="17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="search-farmaci" placeholder="Cerca farmaco per nome..."
+                       oninput="filterFarmaci(this.value)">
+                <button class="search-clear hidden" id="search-clear" onclick="clearSearch()" title="Cancella ricerca">✕</button>
+            </div>
         </div>
         <div id="farmaci-list">
             <div class="loading">Caricamento...</div>
@@ -487,6 +495,12 @@ function filterFarmaci(query) {
         const nome = row.querySelector('.farmaco-nome-text')?.textContent.toLowerCase() || '';
         row.style.display = nome.includes(q) ? '' : 'none';
     });
+    const clearBtn = document.getElementById('search-clear');
+    if (clearBtn) clearBtn.classList.toggle('hidden', !query);
+}
+function clearSearch() {
+    const input = document.getElementById('search-farmaci');
+    if (input) { input.value = ''; filterFarmaci(''); input.focus(); }
 }
 
 // ---- FILTRI + POLLING ----
