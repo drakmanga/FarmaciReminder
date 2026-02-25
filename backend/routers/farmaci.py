@@ -111,7 +111,6 @@ async def create_farmaco(
     nome = str(form.get("nome", "")).strip()
     descrizione = str(form.get("descrizione", "")).strip() or None
     data_scadenza_str = str(form.get("data_scadenza", "")).strip()
-    no_scadenza = form.get("no_scadenza") == "on"
 
     if not nome:
         raise HTTPException(status_code=400, detail="Il nome è obbligatorio")
@@ -121,9 +120,7 @@ async def create_farmaco(
         descrizione = _html.escape(descrizione[:500])
 
     data_scadenza_val = None
-    if not no_scadenza:
-        if not data_scadenza_str:
-            raise HTTPException(status_code=400, detail="Inserisci una data di scadenza oppure seleziona 'Nessuna scadenza'")
+    if data_scadenza_str:
         try:
             date.fromisoformat(data_scadenza_str)
             data_scadenza_val = data_scadenza_str
@@ -164,14 +161,12 @@ async def update_farmaco(
         descrizione = body.get("descrizione")
         data_scadenza_str = body.get("data_scadenza")
         stato = body.get("stato")
-        no_scadenza = body.get("no_scadenza", False)
     else:
         form = await request.form()
         nome = form.get("nome")
         descrizione = form.get("descrizione")
         data_scadenza_str = form.get("data_scadenza")
         stato = form.get("stato")
-        no_scadenza = form.get("no_scadenza") == "on"
 
     fields = []
     values = []
@@ -185,23 +180,23 @@ async def update_farmaco(
         fields.append("descrizione = ?")
         values.append(desc_val)
 
-    if no_scadenza:
-        # Rimuovi la scadenza
-        fields.append("data_scadenza = NULL")
-        fields.append("notifica_preavviso_inviata = 0")
-        fields.append("notifica_scaduto_inviata = 0")
-        fields.append("stato = 'attivo'")
-    elif data_scadenza_str:
-        try:
-            date.fromisoformat(str(data_scadenza_str))
-            fields.append("data_scadenza = ?")
-            values.append(str(data_scadenza_str))
-            # Reset notifiche se la data cambia
+    if data_scadenza_str is not None:
+        if str(data_scadenza_str).strip() == "":
+            # Data vuota → rimuovi la scadenza
+            fields.append("data_scadenza = NULL")
             fields.append("notifica_preavviso_inviata = 0")
             fields.append("notifica_scaduto_inviata = 0")
             fields.append("stato = 'attivo'")
-        except ValueError:
-            pass
+        else:
+            try:
+                date.fromisoformat(str(data_scadenza_str))
+                fields.append("data_scadenza = ?")
+                values.append(str(data_scadenza_str))
+                fields.append("notifica_preavviso_inviata = 0")
+                fields.append("notifica_scaduto_inviata = 0")
+                fields.append("stato = 'attivo'")
+            except ValueError:
+                pass
 
     if stato is not None:
         allowed = {"attivo", "in_scadenza", "scaduto", "eliminato"}
