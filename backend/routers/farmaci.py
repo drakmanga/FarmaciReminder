@@ -13,6 +13,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "frontend"))
 
 
+def _cap_first(s: str) -> str:
+    """Prima lettera maiuscola, resto invariato."""
+    return s[0].upper() + s[1:] if s else s
+
+
+def _cap_indicazione(s: str) -> str:
+    """Prima lettera maiuscola per ogni segmento separato da /."""
+    return "/".join(_cap_first(part.strip()) for part in s.split("/"))
+
+
 def _giorni_alla_scadenza(data_scadenza_str) -> int | None:
     """Calcola i giorni rimanenti alla scadenza. Ritorna None se non c'è scadenza."""
     if data_scadenza_str is None:
@@ -115,9 +125,9 @@ async def create_farmaco(
     if not nome:
         raise HTTPException(status_code=400, detail="Il nome è obbligatorio")
 
-    nome = _html.escape(nome[:100])
+    nome = _cap_first(_html.escape(nome[:100]))
     if descrizione:
-        descrizione = _html.escape(descrizione[:500])
+        descrizione = _cap_indicazione(_html.escape(descrizione[:500]))
 
     data_scadenza_val = None
     if data_scadenza_str:
@@ -173,10 +183,10 @@ async def update_farmaco(
 
     if nome is not None:
         fields.append("nome = ?")
-        values.append(_html.escape(str(nome)[:100]))
+        values.append(_cap_first(_html.escape(str(nome)[:100])))
 
     if descrizione is not None:
-        desc_val = _html.escape(str(descrizione)[:500]) if str(descrizione).strip() else None
+        desc_val = _cap_indicazione(_html.escape(str(descrizione)[:500])) if str(descrizione).strip() else None
         fields.append("descrizione = ?")
         values.append(desc_val)
 
