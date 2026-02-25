@@ -8,12 +8,16 @@ Add your medicines with name, purpose and expiry date. The system will automatic
 
 ## ✨ Features
 
-- **Medicine management** — add, edit, delete medicines with name, description and expiry date
+- **Medicine management** — add, edit, delete medicines with name, description and expiry date (date is optional)
 - **Expiry warning** — automatic Telegram alert **once** when a medicine enters the 30-day window before expiry
 - **Expired notification** — Telegram alert **every day** as long as the medicine remains expired
 - **Quick renewal** — 🔄 button to update the expiry date of an expired medicine (after purchasing a new one)
 - **Web dashboard** — medical-themed interface, sorting by status/expiry, colored badges
-- **Telegram bot** — `/farmaci` command to get the list of medicines that need attention
+- **Search bar** — filter medicines by name directly in the dashboard
+- **Expired counter** — badge showing the number of expired medicines with a one-click filter
+- **CSV export** — download the full medicine list as a `.csv` file
+- **Auto-capitalization** — name and description are automatically capitalized on add/edit
+- **Telegram bot** — `/farmaci`, `/lista`, `/cerca` commands (see below)
 - **Automatic backup** — daily SQLite database backup
 - **Light/dark theme** — toggle available in settings
 
@@ -205,6 +209,7 @@ FarmaciReminder/
 | POST | `/farmaci` | Add medicine |
 | PUT | `/farmaci/{id}` | Edit medicine / renew expiry |
 | DELETE | `/farmaci/{id}` | Delete medicine (soft delete) |
+| GET | `/export/csv` | Export all medicines as CSV |
 | GET | `/settings` | Current Telegram config |
 | POST | `/settings/token` | Save bot token |
 | POST | `/settings/chat-ids` | Save Chat IDs |
@@ -257,6 +262,8 @@ FarmaciReminder/
 |---------|-------------|
 | `/start` | Welcome message |
 | `/farmaci` | List of expiring and expired medicines |
+| `/lista` | Full list of all medicines |
+| `/cerca [name]` | Search medicines by name |
 
 Automatic notifications are sent to the chat_ids configured in settings.
 
