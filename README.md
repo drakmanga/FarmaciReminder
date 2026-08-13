@@ -1,5 +1,12 @@
 # 💊 FarmaciReminder
 
+![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)
+![Last Commit](https://img.shields.io/github/last-commit/drakmanga/FarmaciReminder)
+![Repo Size](https://img.shields.io/github/repo-size/drakmanga/FarmaciReminder)
+
 Self-hosted web system for managing medicine expiry dates with automatic Telegram notifications.
 
 Add your medicines with name, purpose and expiry date. The system will automatically alert you when a medicine is about to expire or has already expired.
